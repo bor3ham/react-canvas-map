@@ -14,7 +14,7 @@ const KEYDOWN_ESCAPE = 27
 
 export default class Map extends React.Component {
   static propTypes = {
-    planImage: PropTypes.string,
+    image: PropTypes.string,
     children: PropTypes.node,
     onClick: PropTypes.func,
     onDoubleClick: PropTypes.func,
@@ -36,7 +36,7 @@ export default class Map extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    if (this.props.image !== prevprops.image) {
+    if (this.props.image !== prevProps.image) {
       this.mapImage = new Image()
       this.mapImage.src = this.props.image
       this.mapImage.onload = this.redraw
