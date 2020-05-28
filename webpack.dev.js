@@ -8,9 +8,8 @@ module.exports = {
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: '[name].js',
+    filename: 'react-canvas-map.js',
     libraryTarget: 'umd',
-    library: 'react-canvas-map',
   },
   module: {
     rules: [

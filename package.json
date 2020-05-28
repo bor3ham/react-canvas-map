@@ -1,6 +1,6 @@
 {
   "name": "react-canvas-map",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "An interactive canvas-based map component for React.",
   "main": "dist/react-canvas-map.js",
   "repository": "git@github.com:bor3ham/react-canvas-map.git",
