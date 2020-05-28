@@ -1,0 +1,36 @@
+import React from 'react'
+import PropTypes from 'prop-types'
+
+import { coordsShape } from './shapes.js'
+
+/* eslint-disable react/no-unused-prop-types */
+
+export default class Marker extends React.Component {
+  static propTypes = {
+    markerKey: PropTypes.string,
+    coords: coordsShape.isRequired,
+
+    image: PropTypes.object,
+    inCircle: PropTypes.bool,
+    circleColour: PropTypes.string,
+    size: PropTypes.number,
+    scaleWithZoom: PropTypes.bool,
+
+    dragZoneScale: PropTypes.number,
+    onDragTick: PropTypes.func,
+    onDragEnd: PropTypes.func,
+    onDragCancel: PropTypes.func,
+  }
+
+  static defaultProps = {
+    inCircle: false,
+    circleColour: '#337ab7',
+    size: 100,
+    scaleWithZoom: true,
+    dragZoneScale: 1,
+  }
+
+  render() {
+    return null
+  }
+}
