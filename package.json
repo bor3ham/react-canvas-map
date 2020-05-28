@@ -1,0 +1,10 @@
+{
+  "name": "react-canvas-map",
+  "version": "0.0.1",
+  "description": "An interactable canvas-based map component for React.",
+  "main": "index.js",
+  "repository": "git@github.com:bor3ham/react-canvas-map.git",
+  "author": "Michael Boreham",
+  "license": "MIT",
+  "private": false
+}
