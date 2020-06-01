@@ -4,6 +4,8 @@ Please note that this package is not intended for world maps or integrating with
 datasets. It is instead for displaying a single static image, zooming and panning around it, with
 markers and drop zones in 2d space relative to that image.
 
+Check out the [live demo page](https://bor3ham.github.io/react-canvas-map/) to see it in action.
+
 # Installation
 
 To use simply install from `npm`:
@@ -12,11 +14,11 @@ To use simply install from `npm`:
 npm install react-canvas-map
 ```
 
-Check out the examples on the demo site for implementation example code.
+Check out the [examples on the demo site](demo/examples) for implementation example code.
 
 # Development Environment
 
-## Installation
+## Setup
 
 From the root directory, install the requirements of the base package with `yarn` / `npm`:
 
