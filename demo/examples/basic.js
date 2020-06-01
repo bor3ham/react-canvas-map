@@ -7,15 +7,15 @@ function Basic(props) {
   const [markerOneImage] = useState(new Image())
   const [markerTwoImage] = useState(new Image())
   useEffect(() => {
-    markerOneImage.src = 'https://loremflickr.com/100/100'
-    markerTwoImage.src = 'https://loremflickr.com/100/100'
+    markerOneImage.src = 'https://placekitten.com/100/100'
+    markerTwoImage.src = 'https://placekitten.com/100/100'
   }, [])
   const [markerOneCoords, setMarkerOneCoords] = useState({x: 100, y: 200})
   const [markerTwoCoords, setMarkerTwoCoords] = useState({x: 150, y: 20})
   return (
     <div style={{height: '50vh', border: '1px solid #ddd', marginTop: '1rem'}}>
       <Map
-        image="https://loremflickr.com/800/600"
+        image="https://placekitten.com/800/600"
       >
         <Marker
           markerKey="marker-one"
