@@ -21,12 +21,14 @@ export default class Map extends React.Component {
     minZoom: PropTypes.number,
     maxZoom: PropTypes.number,
     overpan: PropTypes.number,
+    minDragTime: PropTypes.number,
   }
 
   static defaultProps = {
     minZoom: 0.2,
     maxZoom: 5,
     overpan: 30,
+    minDragTime: 500,
   }
 
   constructor(props) {
@@ -60,6 +62,7 @@ export default class Map extends React.Component {
     this.dragged = false
     this.draggingMarkerKey = null
     this.clickPoint = null
+    this.clickTime = +(new Date())
 
     const canvas = this.canvasRef.current
     if (canvas) {
@@ -143,11 +146,13 @@ export default class Map extends React.Component {
 
     document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = 'none'
     this.clickPoint = this.getCursorCoords()
+    this.dragTimeout = window.setTimeout(this.documentMouseMoveListener, this.props.minDragTime)
+    this.clickTime = +(new Date())
     this.dragged = false
     this.draggingMarkerKey = this.getMarkerTouchingCursor()
   }
 
-  documentMouseMoveListener = () => {
+  documentMouseMoveListener = (event) => {
     const canvas = this.canvasRef.current
     if (!canvas) {
       return
@@ -156,8 +161,10 @@ export default class Map extends React.Component {
 
     const lastPt = this.getCursorCoords()
     const rect = canvas.getBoundingClientRect()
-    this.cursorX = event.clientX - rect.x
-    this.cursorY = event.clientY - rect.y
+    if (event) {
+      this.cursorX = event.clientX - rect.x
+      this.cursorY = event.clientY - rect.y
+    }
 
     if (!this.clickPoint) {
       this.updateCursor()
@@ -166,7 +173,9 @@ export default class Map extends React.Component {
 
     this.dragged = true
     if (this.draggingMarkerKey) {
-      this.dragTick(this.draggingMarkerKey)
+      if (new Date() > this.clickTime + this.props.minDragTime) {
+        this.dragTick(this.draggingMarkerKey)
+      }
     } else {
       const pt = this.getCursorCoords()
       const transform = context.getTransform()
@@ -208,7 +217,14 @@ export default class Map extends React.Component {
   }
 
   documentMouseUpListener = (event) => {
-    if (this.draggingMarkerKey && this.dragged) {
+    if (this.dragTimeout) {
+      window.clearTimeout(this.dragTimeout)
+    }
+    if (
+      this.draggingMarkerKey &&
+      this.dragged &&
+      new Date() > this.clickTime + this.props.minDragTime
+    ) {
       this.dragEnd(this.draggingMarkerKey)
       this.draggingMarkerKey = null
     }
