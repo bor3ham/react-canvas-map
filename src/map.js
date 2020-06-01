@@ -28,7 +28,7 @@ export default class Map extends React.Component {
     minZoom: 0.2,
     maxZoom: 5,
     overpan: 30,
-    minDragTime: 500,
+    minDragTime: 300,
   }
 
   constructor(props) {
