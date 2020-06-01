@@ -1,0 +1,6 @@
+exclude:
+  - 'node_modules'
+layouts_dir: 'node_modules/uptick-demo-site/dist'
+package_name: React Canvas Map
+package_github_url: https://github.com/bor3ham/react-canvas-map
+package_npm_url: https://www.npmjs.com/package/react-canvas-map

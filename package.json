@@ -8,9 +8,10 @@
   "license": "MIT",
   "private": false,
   "scripts": {
-    "build-js": "./node_modules/.bin/webpack --config webpack.build.js",
-    "watch-js": "./node_modules/.bin/webpack --config webpack.dev.js --watch",
-    "build": "npm run build-js",
+    "build:js": "./node_modules/.bin/webpack --config webpack.build.js",
+    "watch:js": "./node_modules/.bin/webpack --config webpack.dev.js --watch",
+    "watch": "npm run watch:js",
+    "build": "npm run build:js",
     "prepare": "npm run build"
   },
   "dependencies": {
