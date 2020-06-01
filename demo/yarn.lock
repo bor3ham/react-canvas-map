@@ -3976,10 +3976,10 @@ upath@^1.1.1:
   resolved "https://registry.yarnpkg.com/upath/-/upath-1.2.0.tgz#8f66dbcd55a883acdae4408af8b035a5044c1894"
   integrity sha512-aZwGpamFO61g3OlfT7OQCHqhGnW43ieH9WZeP7QxN/G/jS4jfqUkZxoryvJgVPEcrl5NL/ggHsSmLMHuH64Lhg==
 
-uptick-demo-site@^1.1.6:
-  version "1.1.6"
-  resolved "https://registry.yarnpkg.com/uptick-demo-site/-/uptick-demo-site-1.1.6.tgz#8faa6e16cfe1e39f313f31f1528d84ab64ba5c9c"
-  integrity sha512-nfmtbTN+aVO1gd+T57Se6QvvUC3si/pU7vpm9kftCyPoYjgr+UF5lpbJ6c0jiUdBX5BO5nPD1oXGbMB245sbBA==
+uptick-demo-site@^1.1.8:
+  version "1.1.8"
+  resolved "https://registry.yarnpkg.com/uptick-demo-site/-/uptick-demo-site-1.1.8.tgz#61f4b57de56f6df7a959c7694598ce301f025356"
+  integrity sha512-gDosLE7aChRsc4kJmGgd37lRtTi9SwGOp1xQdhZ+vMSqUseuH8CJhNCkpsvzNiyuYu/d+cSN+oc8ZPOKfQ4hdw==
 
 uri-js@^4.2.2:
   version "4.2.2"
