@@ -7,9 +7,6 @@ import DropZone from './drop-zone.js'
 
 const SCALE_FACTOR = 1.1
 
-const CROSSHAIR_IMAGE = 'http://www.pngpix.com/wp-content/uploads/2016/10/PNGPIX-COM-Crosshair-PNG-Transparent-Image-1-500x500.png'
-const CROSSHAIR_SIZE = 100
-
 const KEYDOWN_ESCAPE = 27
 
 export default class Map extends React.Component {
@@ -49,15 +46,9 @@ export default class Map extends React.Component {
   }
 
   componentDidMount() {
-    this.crosshairPoint = null
-
     this.mapImage = new Image()
     this.mapImage.src = this.props.image
     this.mapImage.onload = this.redraw
-
-    this.crosshairImage = new Image()
-    this.crosshairImage.src = CROSSHAIR_IMAGE
-    this.crosshairImage.onload = this.redraw
 
     this.dragged = false
     this.draggingMarkerKey = null
@@ -345,15 +336,6 @@ export default class Map extends React.Component {
     context.restore()
 
     context.drawImage(this.mapImage, 0, 0)
-    if (this.crosshairPoint) {
-      context.drawImage(
-        this.crosshairImage,
-        this.crosshairPoint.x - (CROSSHAIR_SIZE / 2),
-        this.crosshairPoint.y - (CROSSHAIR_SIZE / 2),
-        CROSSHAIR_SIZE,
-        CROSSHAIR_SIZE
-      )
-    }
 
     const scale = Math.min(context.getTransform().a, context.getTransform().d)
     const renderMarkers = (child) => {
