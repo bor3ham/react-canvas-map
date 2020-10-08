@@ -19,6 +19,8 @@ export default class Map extends React.Component {
     maxZoom: PropTypes.number,
     overpan: PropTypes.number,
     minDragTime: PropTypes.number,
+    containInitialImage: PropTypes.bool, // begin with zoom/translation that contains intial image
+    containUpdatedImage: PropTypes.bool, // update zoom/translation to contain a change of image
   }
 
   static defaultProps = {
@@ -26,19 +28,26 @@ export default class Map extends React.Component {
     maxZoom: 5,
     overpan: 30,
     minDragTime: 300,
+    containInitialImage: true,
+    containUpdatedImage: true,
   }
 
   constructor(props) {
     super(props)
 
     this.canvasRef = React.createRef()
+
+    this.state = {
+      ...this.state,
+      containmentScale: 1, // scale at which the provided image totally covers the canvas
+    }
   }
 
   componentDidUpdate(prevProps, prevState) {
     if (this.props.image !== prevProps.image) {
       this.mapImage = new Image()
       this.mapImage.src = this.props.image
-      this.mapImage.onload = this.redraw
+      this.mapImage.onload = this.onImageLoad
       this.resetView()
     } else {
       this.redraw()
@@ -48,7 +57,7 @@ export default class Map extends React.Component {
   componentDidMount() {
     this.mapImage = new Image()
     this.mapImage.src = this.props.image
-    this.mapImage.onload = this.redraw
+    this.mapImage.onload = this.onImageInit
 
     this.dragged = false
     this.draggingMarkerKey = null
@@ -73,6 +82,76 @@ export default class Map extends React.Component {
     document.addEventListener('keydown', this.documentKeyDownListener, false)
 
     this.resize()
+  }
+
+  onImageInit = () => {
+    this.onImageLoad(true)
+  }
+
+  onImageLoad = (initialising = false) => {
+    const canvas = this.canvasRef.current
+    if (!canvas) {
+      return
+    }
+    const context = canvas.getContext('2d')
+    const imgWidth = this.mapImage.width
+    const imgHeight = this.mapImage.height
+    if (imgWidth && imgHeight) {
+      const containing = (
+        (initialising && this.props.containInitialImage)
+        || (!initialising && this.props.containUpdatedImage)
+      )
+
+      const widthScaledHeight = (imgHeight / imgWidth) * canvas.width
+      const heightScaledWidth = (imgWidth / imgHeight) * canvas.height
+      let containmentScale = 1
+      if (widthScaledHeight > canvas.height) {
+        containmentScale = canvas.height / imgHeight
+        if (containing) {
+          let transform = context.getTransform()
+          const scaleAdjust = containmentScale / transform.d
+          context.scale(scaleAdjust, scaleAdjust)
+          transform = context.getTransform()
+          context.translate(
+            (-transform.e + (canvas.width / 2) - (heightScaledWidth / 2)) / transform.a,
+            -transform.f / transform.d
+          )
+        }
+      }
+      else {
+        containmentScale = canvas.width / imgWidth
+        if (containing) {
+          let transform = context.getTransform()
+          const scaleAdjust =  containmentScale / transform.a
+          context.scale(scaleAdjust, scaleAdjust)
+          transform = context.getTransform()
+          context.translate(
+            -transform.e / transform.a,
+            (-transform.f + (canvas.height / 2) - (widthScaledHeight / 2)) / transform.d
+          )
+        }
+      }
+      this.setState({containmentScale,})
+      this.redraw()
+    }
+  }
+
+  updateContainmentScale = () => {
+    const canvas = this.canvasRef.current
+    if (!canvas) {
+      return
+    }
+    const imgWidth = this.mapImage.width
+    const imgHeight = this.mapImage.height
+    if (imgWidth && imgHeight) {
+      const widthScaledHeight = (imgHeight / imgWidth) * canvas.width
+      if (widthScaledHeight > canvas.height) {
+        this.setState({containmentScale: canvas.height / imgHeight})
+      }
+      else {
+        this.setState({containmentScale: canvas.width / imgWidth})
+      }
+    }
   }
 
   componentWillUnmount() {
@@ -259,6 +338,7 @@ export default class Map extends React.Component {
     // reset the transforms
     // todo: rescale the transforms to match the new size instead
     this.resetView()
+    this.updateContainmentScale()
   }
 
   resetView = () => {
