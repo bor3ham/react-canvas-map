@@ -21,6 +21,7 @@ export default class Map extends React.Component {
     minDragTime: PropTypes.number,
     containInitialImage: PropTypes.bool, // begin with zoom/translation that contains intial image
     containUpdatedImage: PropTypes.bool, // update zoom/translation to contain a change of image
+    allowContainmentZoom: PropTypes.bool, // allow zooming beyond min/max if image is not contained
   }
 
   static defaultProps = {
@@ -30,6 +31,21 @@ export default class Map extends React.Component {
     minDragTime: 300,
     containInitialImage: true,
     containUpdatedImage: true,
+    allowContainmentZoom: true,
+  }
+
+  getMaxZoom() {
+    if (this.props.allowContainmentZoom) {
+      return Math.max(this.props.maxZoom, this.state.containmentScale)
+    }
+    return this.props.maxZoom
+  }
+
+  getMinZoom() {
+    if (this.props.allowContainmentZoom) {
+      return Math.min(this.props.minZoom, this.state.containmentScale)
+    }
+    return this.props.minZoom
   }
 
   constructor(props) {
@@ -109,7 +125,7 @@ export default class Map extends React.Component {
         containmentScale = canvas.height / imgHeight
         if (containing) {
           let transform = context.getTransform()
-          const scaleAdjust = containmentScale / transform.d
+          let scaleAdjust = containmentScale / transform.d
           context.scale(scaleAdjust, scaleAdjust)
           transform = context.getTransform()
           context.translate(
@@ -131,7 +147,7 @@ export default class Map extends React.Component {
           )
         }
       }
-      this.setState({containmentScale,})
+      this.updateContainmentScale()
       this.redraw()
     }
   }
@@ -145,12 +161,14 @@ export default class Map extends React.Component {
     const imgHeight = this.mapImage.height
     if (imgWidth && imgHeight) {
       const widthScaledHeight = (imgHeight / imgWidth) * canvas.width
+      let containmentScale = 1
       if (widthScaledHeight > canvas.height) {
-        this.setState({containmentScale: canvas.height / imgHeight})
+        containmentScale = canvas.height / imgHeight
       }
       else {
-        this.setState({containmentScale: canvas.width / imgWidth})
+        containmentScale = canvas.width / imgWidth
       }
+      this.setState({containmentScale,})
     }
   }
 
@@ -578,13 +596,13 @@ export default class Map extends React.Component {
     const transform = context.getTransform()
     if (factor > 1) {
       const maxScale = Math.max(transform.a, transform.d)
-      if (maxScale * factor > this.props.maxZoom) {
-        factor = this.props.maxZoom / maxScale
+      if (maxScale * factor > this.getMaxZoom()) {
+        factor = this.getMaxZoom() / maxScale
       }
     } else {
       const minScale = Math.max(transform.a, transform.d)
-      if (minScale * factor < this.props.minZoom) {
-        factor = this.props.minZoom / minScale
+      if (minScale * factor < this.getMinZoom()) {
+        factor = this.getMinZoom() / minScale
       }
     }
     context.scale(factor, factor)
