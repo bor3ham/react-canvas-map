@@ -192,9 +192,15 @@ export default class Map extends React.Component {
   getCursorCoords = () => {
     const canvas = this.canvasRef.current
     if (!canvas) {
-      return {x: 0, y: 0}
+      return null
     }
     const context = canvas.getContext('2d')
+    if (
+      typeof this.cursorX !== 'number' || isNaN(this.cursorX) ||
+      typeof this.cursorY !== 'number' || isNaN(this.cursorY)
+    ) {
+      return null
+    }
     return context.transformedPoint(this.cursorX, this.cursorY)
   }
 
@@ -266,6 +272,9 @@ export default class Map extends React.Component {
       }
     } else {
       const pt = this.getCursorCoords()
+      if (pt === null || lastPt === null) {
+        return
+      }
       const transform = context.getTransform()
       let translateX = pt.x - lastPt.x
       let translateY = pt.y - lastPt.y
@@ -533,6 +542,11 @@ export default class Map extends React.Component {
 
     const close = {}
 
+    const cursorPt = this.getCursorCoords()
+    if (cursorPt === null) {
+      return null
+    }
+
     this.getMarkerChildren().map(child => {
       if (!(
         typeof child.props.onClick === 'function' ||
@@ -547,7 +561,6 @@ export default class Map extends React.Component {
 
       let distSq
       if (child.props.scaleWithZoom) {
-        const cursorPt = this.getCursorCoords()
         distSq = (
           Math.pow(child.props.coords.x - cursorPt.x, 2) +
           Math.pow(child.props.coords.y - cursorPt.y, 2)
@@ -590,6 +603,9 @@ export default class Map extends React.Component {
     const context = canvas.getContext('2d')
 
     const pt = this.getCursorCoords()
+    if (pt === null) {
+      return
+    }
     context.translate(pt.x, pt.y)
     let factor = Math.pow(SCALE_FACTOR, clicks)
     // limit zoom to given ranges in props
@@ -622,6 +638,9 @@ export default class Map extends React.Component {
 
   handleClick = (event) => {
     const pt = this.getCursorCoords()
+    if (pt === null) {
+      return
+    }
 
     let clickedMarker = null
     if (this.draggingMarkerKey) {
@@ -663,6 +682,9 @@ export default class Map extends React.Component {
 
   dragTick = (draggingMarkerKey) => {
     const pt = this.getCursorCoords()
+    if (pt === null) {
+      return
+    }
     const draggingMarker = this.getMarkerChild(draggingMarkerKey)
     if (draggingMarker && typeof draggingMarker.props.onDragTick === 'function') {
       draggingMarker.props.onDragTick(pt)
@@ -671,6 +693,9 @@ export default class Map extends React.Component {
 
   getDropZoneTouchingCursor = () => {
     const pt = this.getCursorCoords()
+    if (pt === null) {
+      return
+    }
     // go through dropzones and see if it has landed in any
     let droppedZone = null
     this.getDropZoneChildren().map(dropZone => {
@@ -692,6 +717,9 @@ export default class Map extends React.Component {
 
   dragEnd = (draggingMarkerKey) => {
     const pt = this.getCursorCoords()
+    if (pt === null) {
+      return
+    }
     const draggedMarker = this.getMarkerChild(draggingMarkerKey)
     if (!draggedMarker) {
       return
