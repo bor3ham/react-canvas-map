@@ -4,7 +4,7 @@ import ReactDOM from 'react-dom'
 import Map, { Marker, DropZone } from 'react-canvas-map'
 
 const markerImage = new Image()
-markerImage.src = `../../static/marker-blue.svg`
+markerImage.src = `../static/marker-blue.svg`
 
 function DropZoneExample(props) {
   const [markers, setMarkers] = useState([])
@@ -19,7 +19,7 @@ function DropZoneExample(props) {
       <p>Click map to create markers. Drag them into the top right zone to destroy.</p>
       <div style={{height: '50vh', border: '1px solid #ddd', marginTop: '1rem'}}>
         <Map
-          image="../../static/map.jpg"
+          image="../static/map.jpg"
           onClick={(coords) => {
             setMarkers([...markers, coords])
           }}

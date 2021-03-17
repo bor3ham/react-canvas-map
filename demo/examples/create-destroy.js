@@ -4,7 +4,7 @@ import ReactDOM from 'react-dom'
 import Map, { Marker } from 'react-canvas-map'
 
 const markerImage = new Image()
-markerImage.src = '../../static/marker-blue.svg'
+markerImage.src = '../static/marker-blue.svg'
 
 function CreateDestroyExample(props) {
   const [markers, setMarkers] = useState([])
@@ -13,7 +13,7 @@ function CreateDestroyExample(props) {
       <p>Click map to create markers. Click the markers to destroy them.</p>
       <div style={{height: '50vh', border: '1px solid #ddd', marginTop: '1rem'}}>
         <Map
-          image="../../static/map.jpg"
+          image="../static/map.jpg"
           onClick={(coords) => {
             setMarkers([...markers, coords])
           }}
