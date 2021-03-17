@@ -4,9 +4,9 @@ import ReactDOM from 'react-dom'
 import Map, { Marker } from 'react-canvas-map'
 
 const markerOneImage = new Image()
-markerOneImage.src = '../static/marker-blue.svg'
+markerOneImage.src = './static/marker-blue.svg'
 const markerTwoImage = new Image()
-markerTwoImage.src = '../static/marker-red.svg'
+markerTwoImage.src = './static/marker-red.svg'
 
 function BasicExample(props) {
   const [markerOneCoords, setMarkerOneCoords] = useState({x: 100, y: 200})
@@ -14,7 +14,7 @@ function BasicExample(props) {
   return (
     <div style={{height: '50vh', border: '1px solid #ddd', marginTop: '1rem'}}>
       <Map
-        image="../static/map.jpg"
+        image="./static/map.jpg"
       >
         <Marker
           markerKey="marker-one"
