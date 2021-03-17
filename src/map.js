@@ -323,8 +323,8 @@ export default class Map extends React.Component {
       new Date() > this.clickTime + this.props.minDragTime
     ) {
       this.dragEnd(this.draggingMarkerKey)
-      this.draggingMarkerKey = null
     }
+    this.draggingMarkerKey = null
     this.clickPoint = null
     this.dragged = false
     this.redraw()
