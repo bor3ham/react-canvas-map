@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import ReactDOM from 'react-dom'
 
 import Map, { Marker } from 'react-canvas-map'
 
-function Basic(props) {
-  const [markerOneImage] = useState(new Image())
-  const [markerTwoImage] = useState(new Image())
-  useEffect(() => {
-    markerOneImage.src = '/static/marker-blue.svg'
-    markerTwoImage.src = '/static/marker-red.svg'
-  }, [])
+const markerOneImage = new Image()
+markerOneImage.src = '/static/marker-blue.svg'
+const markerTwoImage = new Image()
+markerTwoImage.src = '/static/marker-red.svg'
+
+function BasicExample(props) {
   const [markerOneCoords, setMarkerOneCoords] = useState({x: 100, y: 200})
   const [markerTwoCoords, setMarkerTwoCoords] = useState({x: 150, y: 20})
   return (
@@ -44,5 +43,5 @@ function Basic(props) {
 
 const mount = document.querySelectorAll('div.demo-mount-basic')
 if (mount.length) {
-  ReactDOM.render(<Basic />, mount[0])
+  ReactDOM.render(<BasicExample />, mount[0])
 }
