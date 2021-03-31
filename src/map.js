@@ -89,11 +89,11 @@ export default class Map extends React.Component {
       canvas.addEventListener('dblclick', this.handleDoubleClick)
       canvas.addEventListener('DOMMouseScroll', this.handleScroll, false)
       canvas.addEventListener('mousewheel', this.handleScroll, false)
+      canvas.addEventListener('dragover', this.handleDragOver, false)
     }
 
     window.addEventListener('resize', this.resize)
     document.addEventListener('mousemove', this.documentMouseMoveListener, false)
-    document.addEventListener('drag', this.documentMouseMoveListener, false)
     document.addEventListener('mouseup', this.documentMouseUpListener, false)
     document.addEventListener('keydown', this.documentKeyDownListener, false)
 
@@ -175,7 +175,6 @@ export default class Map extends React.Component {
   componentWillUnmount() {
     window.removeEventListener('resize', this.resize)
     document.removeEventListener('mousemove', this.documentMouseMoveListener, false)
-    document.removeEventListener('drag', this.documentMouseMoveListener, false)
     document.removeEventListener('mouseup', this.documentMouseUpListener, false)
     document.removeEventListener('keydown', this.documentKeyDownListener, false)
 
@@ -186,6 +185,7 @@ export default class Map extends React.Component {
       canvas.removeEventListener('dblclick', this.handleDoubleClick)
       canvas.removeEventListener('DOMMouseScroll', this.handleScroll, false)
       canvas.removeEventListener('mousewheel', this.handleScroll, false)
+      canvas.removeEventListener('dragover', this.handleDragOver, false)
     }
   }
 
@@ -797,6 +797,18 @@ export default class Map extends React.Component {
 
     if (!panDone) {
       window.requestAnimationFrame(this.animate)
+    }
+  }
+
+  handleDragOver = (event) => {
+    const canvas = this.canvasRef.current
+    if (!canvas) {
+      return
+    }
+    const rect = canvas.getBoundingClientRect()
+    if (event) {
+      this.cursorX = event.clientX - rect.x
+      this.cursorY = event.clientY - rect.y
     }
   }
 
