@@ -20,6 +20,7 @@ export default class Map extends React.Component {
     maxZoom: PropTypes.number,
     overpan: PropTypes.number,
     minDragTime: PropTypes.number,
+    clickGraceTime: PropTypes.number,
     containInitialImage: PropTypes.bool, // begin with zoom/translation that contains intial image
     containUpdatedImage: PropTypes.bool, // update zoom/translation to contain a change of image
     allowContainmentZoom: PropTypes.bool, // allow zooming beyond min/max if image is not contained
@@ -30,6 +31,7 @@ export default class Map extends React.Component {
     maxZoom: 5,
     overpan: 30,
     minDragTime: 300,
+    clickGraceTime: 100,
     containInitialImage: true,
     containUpdatedImage: true,
     allowContainmentZoom: true,
@@ -277,7 +279,11 @@ export default class Map extends React.Component {
       return
     }
 
-    this.dragged = true
+    if (+(new Date()) > this.clickTime + this.props.clickGraceTime) {
+      this.dragged = true
+    }
+
+
     if (this.draggingMarkerKey) {
       if (new Date() > this.clickTime + this.props.minDragTime) {
         this.dragTick(this.draggingMarkerKey)
