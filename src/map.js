@@ -4,6 +4,7 @@ import PropTypes from 'prop-types'
 import trackTransforms from './track-transforms.js'
 import Marker from './marker.js'
 import DropZone from './drop-zone.js'
+import Tooltip from './tooltip.js'
 
 const SCALE_FACTOR = 1.1
 
@@ -52,6 +53,7 @@ export default class Map extends React.Component {
     super(props)
 
     this.canvasRef = React.createRef()
+    this.tooltipsRef = React.createRef()
 
     this.state = {
       ...this.state,
@@ -210,7 +212,11 @@ export default class Map extends React.Component {
       if (Array.isArray(child)) {
         child.map(getChildren)
       } else if (child) {
-        children.push(child)
+        if (child.props && child.props.children && child.type !== Tooltip) {
+          getChildren(child.props.children)
+        } else {
+          children.push(child)
+        }
       }
     }
     getChildren(this.props.children)
@@ -232,6 +238,12 @@ export default class Map extends React.Component {
   getDropZoneChildren = () => {
     return this.getFlatChildren().filter(child => {
       return child.type && child.type === DropZone
+    })
+  }
+
+  getTooltipChildren = () => {
+    return this.getFlatChildren().filter(child => {
+      return child.type && child.type === Tooltip
     })
   }
 
@@ -530,7 +542,27 @@ export default class Map extends React.Component {
     this.getMarkerChildren().filter(child => {
       return child === draggingMarker
     }).map(renderMarkers)
+    this.updateTooltips()
     this.updateCursor()
+  }
+
+  updateTooltips = () => {
+    const canvas = this.canvasRef.current
+    if (!canvas || !this.tooltipsRef.current) {
+      return
+    }
+    const canvasRect = canvas.getBoundingClientRect()
+    const context = canvas.getContext('2d')
+    Array.from(this.tooltipsRef.current.children).forEach((child) => {
+      const tooltipX = child.dataset.x
+      const tooltipY = child.dataset.y
+
+      const screenCoords = context.untransformedPoint(tooltipX, tooltipY)
+      const relativeX = screenCoords.x / canvasRect.width
+      const relativeY = screenCoords.y / canvasRect.height
+      child.style.setProperty('left', `${relativeX * 100}%`)
+      child.style.setProperty('top', `${relativeY * 100}%`)
+    })
   }
 
   getMarkerTouchingCursor = () => {
@@ -813,6 +845,18 @@ export default class Map extends React.Component {
   }
 
   render() {
-    return (<canvas ref={this.canvasRef} style={{width: '100%', height: '100%'}} />)
+    return (
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+      }}>
+        <canvas ref={this.canvasRef} style={{width: '100%', height: '100%'}} />
+        <div ref={this.tooltipsRef}>
+          {this.getTooltipChildren()}
+        </div>
+      </div>
+    )
   }
 }
