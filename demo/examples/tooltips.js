@@ -14,7 +14,7 @@ function TooltipsExample(props) {
   const [activeMarker, setActiveMarker] = useState(null)
   return (
     <>
-      <p>Click on a maker to open the tooltip.</p>
+      <p>Click on a marker to open the tooltip.</p>
       <div style={{height: '50vh', border: '1px solid #ddd', marginTop: '1rem'}}>
         <Map
           image="../static/map.jpg"
