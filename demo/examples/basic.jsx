@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import ReactDOM from 'react-dom'
-
-import Map, { Marker } from 'react-canvas-map'
+import { Map, Marker } from 'react-canvas-map'
 
 const markerOneImage = new Image()
 markerOneImage.src = './static/marker-blue.svg'

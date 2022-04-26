@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import ReactDOM from 'react-dom'
-
-import Map from 'react-canvas-map'
+import { Map } from 'react-canvas-map'
 
 function randomRange(min, max) {
   min = Math.ceil(min)

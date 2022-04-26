@@ -23,14 +23,14 @@ Check out the [examples on the demo site](demo/examples) for implementation exam
 From the root directory, install the requirements of the base package with `yarn` / `npm`:
 
 ```shell
-yarn
+npm install
 ```
 
 Likewise do the same in the demo folder:
 
 ```shell
 cd demo
-yarn
+npm install
 ```
 
 If you don't already have `ruby` installed, follow their
@@ -48,7 +48,7 @@ To watch the base package's code for changes and rebuild on the fly, run the fol
 project root directory:
 
 ```shell
-yarn watch
+npm run watch
 ```
 
 Simultaneously, to watch the demo project's files for changes and rebuild / host the static files,
@@ -56,7 +56,7 @@ run the following from the demo directory:
 
 ```shell
 cd demo
-yarn start
+npm run start
 ```
 
 You will be able to access a hosted copy of your demo site at `localhost:4000`, and any `javascript`

@@ -1,9 +1,9 @@
 import { init } from 'uptick-demo-site'
 
-import './examples/basic.js'
-import './examples/create-destroy.js'
-import './examples/drop-zone.js'
-import './examples/tooltips.js'
-import './stress-test.js'
+import './examples/basic.jsx'
+import './examples/create-destroy.jsx'
+import './examples/drop-zone.jsx'
+import './examples/tooltips.jsx'
+import './stress-test.jsx'
 
 init()

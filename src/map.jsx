@@ -2,9 +2,9 @@ import React from 'react'
 import PropTypes from 'prop-types'
 
 import trackTransforms from './track-transforms.js'
-import Marker from './marker.js'
-import DropZone from './drop-zone.js'
-import Tooltip from './tooltip.js'
+import Marker from './marker.jsx'
+import DropZone from './drop-zone.jsx'
+import Tooltip from './tooltip.jsx'
 
 const SCALE_FACTOR = 1.1
 
