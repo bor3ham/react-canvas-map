@@ -10,7 +10,7 @@ module.exports.config = {
     }),
   ],
   entryPoints: [
-    'demo.js',
+    'demo.ts',
     'demo.styl',
   ],
   bundle: true,
