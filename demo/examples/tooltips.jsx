@@ -22,9 +22,8 @@ function TooltipsExample(props) {
           {markers.map((marker, markerIndex) => {
             const active = markerIndex === activeMarker
             return (
-              <>
+              <React.Fragment key={`marker-${markerIndex}`}>
                 <Marker
-                  key={`marker-${markerIndex}`}
                   markerKey={`marker-${markerIndex}`}
                   coords={marker}
                   image={markerImage}
@@ -39,7 +38,7 @@ function TooltipsExample(props) {
                     <p>I am marker {JSON.stringify(marker)}</p>
                   </Tooltip>
                 )}
-              </>
+              </React.Fragment>
             )
           })}
         </Map>

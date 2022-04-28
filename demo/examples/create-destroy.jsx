@@ -14,7 +14,7 @@ function CreateDestroyExample(props) {
         <Map
           image="../static/map.jpg"
           onClick={(coords) => {
-            setMarkers([...markers, coords])
+            setMarkers(prevMarkers => [...prevMarkers, coords])
           }}
         >
           {markers.map((marker, markerIndex) => {

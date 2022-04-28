@@ -3,8 +3,6 @@ import PropTypes from 'prop-types'
 
 import { coordsShape } from './shapes.js'
 
-/* eslint-disable react/no-unused-prop-types */
-
 function Tooltip(props) {
   return (
     <div
@@ -74,4 +72,4 @@ Tooltip.defaultProps = {
   arrowSize: 8,
 }
 
-export default Tooltip
+export { Tooltip }

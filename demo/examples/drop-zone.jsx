@@ -20,7 +20,9 @@ function DropZoneExample(props) {
         <Map
           image="../static/map.jpg"
           onClick={(coords) => {
-            setMarkers([...markers, coords])
+            setMarkers((prevMarkers) => {
+              return [...prevMarkers, coords]
+            })
           }}
         >
           {markers.map((marker, markerIndex) => {
@@ -41,13 +43,14 @@ function DropZoneExample(props) {
                   })
                 }}
                 onDragEnd={(coords) => {
-                  const newMarkers = markers.map((oldMarker, oldMarkerIndex) => {
-                    if (oldMarkerIndex === markerIndex) {
-                      return coords
-                    }
-                    return oldMarker
+                  setMarkers((prevMarkers) => {
+                    return markers.map((oldMarker, oldMarkerIndex) => {
+                      if (oldMarkerIndex === markerIndex) {
+                        return coords
+                      }
+                      return oldMarker
+                    })
                   })
-                  setMarkers(newMarkers)
                   setDragState(null)
                 }}
                 markerIndex={markerIndex}

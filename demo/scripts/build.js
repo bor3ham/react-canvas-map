@@ -17,7 +17,7 @@ module.exports.config = {
   minify: true,
   sourcemap: true,
   format: 'iife',
-  // target: ['chrome58', 'firefox57', 'safari11', 'edge16'],
+  target: ['chrome58', 'firefox57', 'safari11', 'edge18'],
   outdir: 'dist',
 }
 

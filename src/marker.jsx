@@ -2,8 +2,6 @@ import PropTypes from 'prop-types'
 
 import { coordsShape } from './shapes.js'
 
-/* eslint-disable react/no-unused-prop-types */
-
 function Marker(props) {
   return null
 }
@@ -22,7 +20,6 @@ Marker.propTypes = {
   onDragEnd: PropTypes.func,
   onDragCancel: PropTypes.func,
 }
-
 Marker.defaultProps = {
   inCircle: false,
   circleColour: '#337ab7',
@@ -31,4 +28,4 @@ Marker.defaultProps = {
   dragZoneScale: 1,
 }
 
-export default Marker
+export { Marker }

@@ -1,214 +1,41 @@
-import React from 'react'
+import React, { useRef, useState, useMemo, useEffect } from 'react'
 import PropTypes from 'prop-types'
 
-import trackTransforms from './track-transforms.js'
-import Marker from './marker.jsx'
-import DropZone from './drop-zone.jsx'
-import Tooltip from './tooltip.jsx'
+import { trackTransforms } from './track-transforms.js'
+import { Marker } from './marker.jsx'
+import { DropZone } from './drop-zone.jsx'
+import { Tooltip } from './tooltip.jsx'
 
 const SCALE_FACTOR = 1.1
-
 const KEYDOWN_ESCAPE = 27
 
-export default class Map extends React.Component {
-  static propTypes = {
-    image: PropTypes.string,
-    children: PropTypes.node,
-    onClick: PropTypes.func,
-    onDoubleClick: PropTypes.func,
-    minZoom: PropTypes.number,
-    maxZoom: PropTypes.number,
-    overpan: PropTypes.number,
-    minDragTime: PropTypes.number,
-    clickGraceTime: PropTypes.number,
-    containInitialImage: PropTypes.bool, // begin with zoom/translation that contains intial image
-    containUpdatedImage: PropTypes.bool, // update zoom/translation to contain a change of image
-    allowContainmentZoom: PropTypes.bool, // allow zooming beyond min/max if image is not contained
-  }
-
-  static defaultProps = {
-    minZoom: 0.2,
-    maxZoom: 5,
-    overpan: 30,
-    minDragTime: 300,
-    clickGraceTime: 100,
-    containInitialImage: true,
-    containUpdatedImage: true,
-    allowContainmentZoom: true,
-  }
-
-  getMaxZoom() {
-    if (this.props.allowContainmentZoom) {
-      return Math.max(this.props.maxZoom, this.state.containmentScale)
-    }
-    return this.props.maxZoom
-  }
-
-  getMinZoom() {
-    if (this.props.allowContainmentZoom) {
-      return Math.min(this.props.minZoom, this.state.containmentScale)
-    }
-    return this.props.minZoom
-  }
-
-  constructor(props) {
-    super(props)
-
-    this.canvasRef = React.createRef()
-    this.tooltipsRef = React.createRef()
-
-    this.state = {
-      ...this.state,
-      containmentScale: 1, // scale at which the provided image totally covers the canvas
-    }
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (this.props.image !== prevProps.image) {
-      this.mapImage = new Image()
-      this.mapImage.src = this.props.image
-      this.mapImage.onload = this.onImageLoad
-      this.resetView()
-    } else {
-      this.redraw()
-    }
-  }
-
-  componentDidMount() {
-    this.mapImage = new Image()
-    this.mapImage.src = this.props.image
-    this.mapImage.onload = this.onImageInit
-
-    this.dragged = false
-    this.draggingMarkerKey = null
-    this.clickPoint = null
-    this.clickTime = +(new Date())
-
-    const canvas = this.canvasRef.current
-    if (canvas) {
-      const context = canvas.getContext('2d')
+function Map(props) {
+  const canvasRef = useRef()
+  useEffect(() => {
+    if (canvasRef.current) {
+      const context = canvasRef.current.getContext('2d')
       trackTransforms(context)
-      canvas.addEventListener('mousedown', this.canvasMouseDownListener, false)
-      canvas.addEventListener('mouseup', this.canvasMouseUp)
-      canvas.addEventListener('dblclick', this.handleDoubleClick)
-      canvas.addEventListener('DOMMouseScroll', this.handleScroll, false)
-      canvas.addEventListener('mousewheel', this.handleScroll, false)
-      canvas.addEventListener('dragover', this.handleDragOver, false)
     }
+  }, [])
+  const mapImage = useRef()
 
-    window.addEventListener('resize', this.resize)
-    document.addEventListener('mousemove', this.documentMouseMoveListener, false)
-    document.addEventListener('mouseup', this.documentMouseUpListener, false)
-    document.addEventListener('keydown', this.documentKeyDownListener, false)
+  const dragged = useRef(false)
+  const draggingMarkerKey = useRef(null)
+  const dragTimeout = useRef(null)
+  const clickPoint = useRef(null)
+  const clickTime = useRef(+(new Date()))
+  const cursorX = useRef(null)
+  const cursorY = useRef(null)
 
-    this.resize()
-  }
+  const animationActive = useRef(false)
+  const animationCancel = useRef(false)
+  const animationStart = useRef(null)
+  const animationCoords = useRef(null)
+  const animationLastTimestamp = useRef(+(new Date()))
 
-  onImageInit = () => {
-    this.onImageLoad(true)
-  }
-
-  onImageLoad = (initialising = false) => {
-    const canvas = this.canvasRef.current
-    if (!canvas) {
-      return
-    }
-    const context = canvas.getContext('2d')
-    const imgWidth = this.mapImage.width
-    const imgHeight = this.mapImage.height
-    if (imgWidth && imgHeight) {
-      const containing = (
-        (initialising && this.props.containInitialImage)
-        || (!initialising && this.props.containUpdatedImage)
-      )
-
-      const widthScaledHeight = (imgHeight / imgWidth) * canvas.width
-      const heightScaledWidth = (imgWidth / imgHeight) * canvas.height
-      let containmentScale = 1
-      if (widthScaledHeight > canvas.height) {
-        containmentScale = canvas.height / imgHeight
-        if (containing) {
-          let transform = context.getTransform()
-          let scaleAdjust = containmentScale / transform.d
-          context.scale(scaleAdjust, scaleAdjust)
-          transform = context.getTransform()
-          context.translate(
-            (-transform.e + (canvas.width / 2) - (heightScaledWidth / 2)) / transform.a,
-            -transform.f / transform.d
-          )
-        }
-      }
-      else {
-        containmentScale = canvas.width / imgWidth
-        if (containing) {
-          let transform = context.getTransform()
-          const scaleAdjust =  containmentScale / transform.a
-          context.scale(scaleAdjust, scaleAdjust)
-          transform = context.getTransform()
-          context.translate(
-            -transform.e / transform.a,
-            (-transform.f + (canvas.height / 2) - (widthScaledHeight / 2)) / transform.d
-          )
-        }
-      }
-      this.updateContainmentScale()
-      this.redraw()
-    }
-  }
-
-  updateContainmentScale = () => {
-    const canvas = this.canvasRef.current
-    if (!canvas) {
-      return
-    }
-    const imgWidth = this.mapImage.width
-    const imgHeight = this.mapImage.height
-    if (imgWidth && imgHeight) {
-      const widthScaledHeight = (imgHeight / imgWidth) * canvas.width
-      let containmentScale = 1
-      if (widthScaledHeight > canvas.height) {
-        containmentScale = canvas.height / imgHeight
-      }
-      else {
-        containmentScale = canvas.width / imgWidth
-      }
-      this.setState({containmentScale,})
-    }
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener('resize', this.resize)
-    document.removeEventListener('mousemove', this.documentMouseMoveListener, false)
-    document.removeEventListener('mouseup', this.documentMouseUpListener, false)
-    document.removeEventListener('keydown', this.documentKeyDownListener, false)
-
-    const canvas = this.canvasRef.current
-    if (canvas) {
-      canvas.removeEventListener('mousedown', this.canvasMouseDownListener, false)
-      canvas.removeEventListener('mouseup', this.canvasMouseUp)
-      canvas.removeEventListener('dblclick', this.handleDoubleClick)
-      canvas.removeEventListener('DOMMouseScroll', this.handleScroll, false)
-      canvas.removeEventListener('mousewheel', this.handleScroll, false)
-      canvas.removeEventListener('dragover', this.handleDragOver, false)
-    }
-  }
-
-  getCursorCoords = () => {
-    const canvas = this.canvasRef.current
-    if (!canvas) {
-      return null
-    }
-    const context = canvas.getContext('2d')
-    if (
-      typeof this.cursorX !== 'number' || isNaN(this.cursorX) ||
-      typeof this.cursorY !== 'number' || isNaN(this.cursorY)
-    ) {
-      return null
-    }
-    return context.transformedPoint(this.cursorX, this.cursorY)
-  }
-
-  getFlatChildren = () => {
+  const markers = useRef()
+  const dropZones = useRef()
+  const flatChildren = useMemo(() => {
     const children = []
     const getChildren = (child) => {
       if (Array.isArray(child)) {
@@ -221,202 +48,45 @@ export default class Map extends React.Component {
         }
       }
     }
-    getChildren(this.props.children)
+    getChildren(props.children)
     return children
-  }
-
-  getMarkerChildren = () => {
-    return this.getFlatChildren().filter(child => {
-      return child.type && child.type === Marker
-    })
-  }
-
-  getMarkerChild = (key) => {
-    return this.getMarkerChildren().find(child => {
+  }, [props.children])
+  markers.current = flatChildren.filter(child => {
+    return child.type && child.type === Marker
+  })
+  const getMarkerChild = (key) => {
+    return markers.current.find(child => {
       return child && child.props.markerKey === key
     })
   }
-
-  getDropZoneChildren = () => {
-    return this.getFlatChildren().filter(child => {
-      return child.type && child.type === DropZone
-    })
-  }
-
-  getTooltipChildren = () => {
-    return this.getFlatChildren().filter(child => {
+  dropZones.current = flatChildren.filter(child => {
+    return child.type && child.type === DropZone
+  })
+  const tooltipChildren = useMemo(() => {
+    return flatChildren.filter(child => {
       return child.type && child.type === Tooltip
     })
-  }
+  }, [flatChildren])
 
-  canvasMouseDownListener = () => {
-    this.animationCancel = true
-
-    document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = 'none'
-    this.clickPoint = this.getCursorCoords()
-    this.dragTimeout = window.setTimeout(this.documentMouseMoveListener, this.props.minDragTime)
-    this.clickTime = +(new Date())
-    this.dragged = false
-    this.draggingMarkerKey = this.getMarkerTouchingCursor()
-  }
-
-  documentMouseMoveListener = (event) => {
-    const canvas = this.canvasRef.current
-    if (!canvas) {
-      return
+  const getCursorCoords = () => {
+    if (!canvasRef.current) {
+      return null
     }
-    const context = canvas.getContext('2d')
-
-    const lastPt = this.getCursorCoords()
-    const rect = canvas.getBoundingClientRect()
-    if (event) {
-      this.cursorX = event.clientX - rect.x
-      this.cursorY = event.clientY - rect.y
-    }
-
-    if (!this.clickPoint) {
-      this.updateCursor()
-      return
-    }
-
-    if (+(new Date()) > this.clickTime + this.props.clickGraceTime) {
-      this.dragged = true
-    }
-
-
-    if (this.draggingMarkerKey) {
-      if (new Date() > this.clickTime + this.props.minDragTime) {
-        this.dragTick(this.draggingMarkerKey)
-      }
-    } else {
-      const pt = this.getCursorCoords()
-      if (pt === null || lastPt === null) {
-        return
-      }
-      const transform = context.getTransform()
-      let translateX = pt.x - lastPt.x
-      let translateY = pt.y - lastPt.y
-      if (translateX > 0) {
-        const xLimit = rect.width - this.props.overpan
-        if (transform.e > xLimit) {
-          translateX = 0
-        } else if (transform.e + translateX > xLimit) {
-          translateX = xLimit - transform.e
-        }
-      } else if (translateX < 0) {
-        const xLimit = -(this.mapImage.width * transform.a) + this.props.overpan
-        if (transform.e < xLimit) {
-          translateX = 0
-        } else if (transform.e + translateX < xLimit) {
-          translateX = xLimit - transform.e
-        }
-      }
-      if (translateY > 0) {
-        const yLimit = rect.height - this.props.overpan
-        if (transform.f > yLimit) {
-          translateY = 0
-        } else if (transform.f + translateY > yLimit) {
-          translateY = yLimit - transform.f
-        }
-      } else if (translateY < 0) {
-        const yLimit = -(this.mapImage.height * transform.d) + this.props.overpan
-        if (transform.f < yLimit) {
-          translateY = 0
-        } else if (transform.f + translateY < yLimit) {
-          translateY = yLimit - transform.f
-        }
-      }
-      context.translate(translateX, translateY)
-      this.redraw()
-    }
-  }
-
-  documentMouseUpListener = (event) => {
-    if (this.dragTimeout) {
-      window.clearTimeout(this.dragTimeout)
-    }
+    const context = canvasRef.current.getContext('2d')
     if (
-      this.draggingMarkerKey &&
-      this.dragged &&
-      new Date() > this.clickTime + this.props.minDragTime
+      typeof cursorX.current !== 'number' || isNaN(cursorX.current) ||
+      typeof cursorY.current !== 'number' || isNaN(cursorY.current)
     ) {
-      this.dragEnd(this.draggingMarkerKey)
+      return null
     }
-    this.draggingMarkerKey = null
-    this.clickPoint = null
-    this.dragged = false
-    this.redraw()
+    return context.transformedPoint(cursorX.current, cursorY.current)
   }
-
-  documentKeyDownListener = (event) => {
-    if (event.which === KEYDOWN_ESCAPE) {
-      const draggingMarker = this.getMarkerChild(this.draggingMarkerKey)
-      if (draggingMarker && typeof draggingMarker.props.onDragCancel === 'function') {
-        draggingMarker.props.onDragCancel()
-      }
-      this.clickPoint = null
-      this.dragged = false
-      this.redraw()
-    }
-  }
-
-  canvasMouseUp = () => {
-    if (!this.dragged) {
-      this.handleClick()
-    }
-  }
-
-  resize = () => {
-    const canvas = this.canvasRef.current
-    if (!canvas) {
-      return
-    }
-    const cursorXProportion = this.cursorX / canvas.clientWidth
-    const cursorYProportion = this.cursorY / canvas.clientHeight
-
-    canvas.width = canvas.clientWidth
-    canvas.height = canvas.clientHeight
-
-    this.cursorX = cursorXProportion * canvas.width
-    this.cursorY = cursorYProportion * canvas.height
-
-    // reset the transforms
-    // todo: rescale the transforms to match the new size instead
-    this.resetView()
-    this.updateContainmentScale()
-  }
-
-  resetView = () => {
-    const canvas = this.canvasRef.current
-    if (!canvas) {
-      return
-    }
-    const context = canvas.getContext('2d')
-
-    const transform = context.getTransform()
-    const maxScale = Math.max(transform.a, transform.d)
-    context.setTransform(maxScale, 0, 0, maxScale, transform.e, transform.f)
-    this.redraw()
-  }
-
-  updateCursor = () => {
-    const canvas = this.canvasRef.current
-
-    const hovered = this.getMarkerTouchingCursor()
-    if (hovered) {
-      canvas.style.cursor = 'pointer'
-    } else {
-      canvas.style.cursor = 'auto'
-    }
-  }
-
-  getScreenPositionCoords = (position) => {
-    const canvas = this.canvasRef.current
-    if (!canvas) {
+  const getScreenPositionCoords = (position) => {
+    if (!canvasRef.current) {
       return [{}, {}, false]
     }
-    const rect = canvas.getBoundingClientRect()
-    const context = canvas.getContext('2d')
+    const rect = canvasRef.current.getBoundingClientRect()
+    const context = canvasRef.current.getContext('2d')
 
     let topLeft = {x: 0, y: 0}
     let bottomRight = {x: 100, y: 100}
@@ -442,25 +112,147 @@ export default class Map extends React.Component {
     bottomRight = context.transformedPoint(bottomRight.x, bottomRight.y)
     return [topLeft, bottomRight, true]
   }
-
-  redraw = () => {
-    const canvas = this.canvasRef.current
-    if (!canvas) {
+  const getDropZoneTouchingCursor = () => {
+    const pt = getCursorCoords()
+    if (pt === null) {
       return
     }
-    const context = canvas.getContext('2d')
+    // go through dropzones and see if it has landed in any
+    let droppedZone = null
+    dropZones.current.map(dropZone => {
+      const [topLeft, bottomRight, valid] = getScreenPositionCoords(dropZone.props)
+      if (!valid) {
+        return
+      }
+      if (
+        pt.x >= topLeft.x &&
+        pt.x <= bottomRight.x &&
+        pt.y >= topLeft.y &&
+        pt.y <= bottomRight.y
+      ) {
+        droppedZone = dropZone
+      }
+    })
+    return droppedZone
+  }
+  const getMarkerTouchingCursor = () => {
+    if (!canvasRef.current) {
+      return null
+    }
+    const context = canvasRef.current.getContext('2d')
 
+    const close = {}
+
+    const cursorPt = getCursorCoords()
+    if (cursorPt === null) {
+      return null
+    }
+
+    markers.current.forEach(child => {
+      if (!(
+        typeof child.props.onClick === 'function' ||
+        typeof child.props.onDoubleClick === 'function' ||
+        typeof child.props.onDragTick === 'function' ||
+        typeof child.props.onDragEnd === 'function'
+      )) {
+        return
+      }
+      const HOVER_DIST = (child.props.size / 2) * child.props.dragZoneScale
+      const HOVER_DIST_SQ = HOVER_DIST * HOVER_DIST
+
+      let distSq
+      if (child.props.scaleWithZoom) {
+        distSq = (
+          Math.pow(child.props.coords.x - cursorPt.x, 2) +
+          Math.pow(child.props.coords.y - cursorPt.y, 2)
+        )
+      } else {
+        const beaconScreenPt = context.untransformedPoint(
+          child.props.coords.x,
+          child.props.coords.y
+        )
+        distSq = (
+          Math.pow(beaconScreenPt.x - this.cursorX, 2) +
+          Math.pow(beaconScreenPt.y - this.cursorY, 2)
+        )
+      }
+
+      if (distSq < HOVER_DIST_SQ) {
+        close[child.props.markerKey] = distSq
+      }
+    })
+    let closestDist = -1
+    let closest = []
+    for (const key in close) {
+      const distSq = close[key]
+      if (closestDist === -1 || distSq < closestDist) {
+        closestDist = distSq
+        closest = []
+        closest.push(key)
+      } else if (distSq === closestDist) {
+        closest.push(key)
+      }
+    }
+    return closest[0]
+  }
+  const updateCursor = () => {
+    if (!canvasRef.current) {
+      return
+    }
+    const hovered = getMarkerTouchingCursor()
+    if (hovered) {
+      canvasRef.current.style.cursor = 'pointer'
+    } else {
+      canvasRef.current.style.cursor = 'auto'
+    }
+  }
+
+  const tooltipsRef = useRef()
+  const updateTooltips = () => {
+    if (!canvasRef.current || !tooltipsRef.current) {
+      return
+    }
+    const canvasRect = canvasRef.current.getBoundingClientRect()
+    const context = canvasRef.current.getContext('2d')
+    Array.from(tooltipsRef.current.children).forEach((child) => {
+      const tooltipX = child.dataset.x
+      const tooltipY = child.dataset.y
+
+      const screenCoords = context.untransformedPoint(tooltipX, tooltipY)
+      const relativeX = screenCoords.x / canvasRect.width
+      const relativeY = screenCoords.y / canvasRect.height
+      child.style.setProperty('left', `${relativeX * 100}%`)
+      child.style.setProperty('top', `${relativeY * 100}%`)
+    })
+  }
+
+  const lastRedraw = useRef(+(new Date()))
+  const logRedraw = (reason) => {
+    // const nowMs = +(new Date())
+    // const idleMs = nowMs - lastRedraw.current
+    // lastRedraw.current = nowMs
+    // console.log(`redrawing for ${reason} after ${idleMs}`)
+  }
+  const redraw = (reason) => {
+    if (!canvasRef.current) {
+      return
+    }
+    logRedraw(reason)
+    const context = canvasRef.current.getContext('2d')
+    
     // Clear the entire canvas
     const p1 = context.transformedPoint(0, 0)
-    const p2 = context.transformedPoint(canvas.width, canvas.height)
+    const p2 = context.transformedPoint(canvasRef.current.width, canvasRef.current.height)
     context.clearRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y)
 
     context.save()
     context.setTransform(1, 0, 0, 1, 0, 0)
-    context.clearRect(0, 0, canvas.width, canvas.height)
+    context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
     context.restore()
 
-    context.drawImage(this.mapImage, 0, 0)
+    if (mapImage.current) {
+      context.drawImage(mapImage.current, 0, 0, mapImage.current.width, mapImage.current.height)
+    }
 
     const scale = Math.min(context.getTransform().a, context.getTransform().d)
     const renderMarkers = (child) => {
@@ -509,14 +301,14 @@ export default class Map extends React.Component {
       }
     }
 
-    const draggingMarker = this.getMarkerChild(this.draggingMarkerKey)
-    this.getMarkerChildren().filter(child => {
+    const draggingMarker = getMarkerChild(draggingMarkerKey.current)
+    markers.current.filter(child => {
       return child !== draggingMarker
     }).map(renderMarkers)
-    if (draggingMarker && this.dragged) {
-      const hoverDropZone = this.getDropZoneTouchingCursor()
+    if (draggingMarker && dragged.current) {
+      const hoverDropZone = getDropZoneTouchingCursor()
       const renderDropZones = (child) => {
-        const [topLeft, bottomRight, valid] = this.getScreenPositionCoords(child.props)
+        const [topLeft, bottomRight, valid] = getScreenPositionCoords(child.props)
         if (!valid) {
           return
         }
@@ -543,227 +335,190 @@ export default class Map extends React.Component {
         )
         context.globalAlpha = 1
       }
-      this.getDropZoneChildren().map(renderDropZones)
+      dropZones.current.map(renderDropZones)
     }
-    this.getMarkerChildren().filter(child => {
+    markers.current.filter(child => {
       return child === draggingMarker
     }).map(renderMarkers)
-    this.updateTooltips()
-    this.updateCursor()
+    updateTooltips()
+    updateCursor()
   }
+  useEffect(() => {
+    redraw('new children')
+  }, [flatChildren])
 
-  updateTooltips = () => {
-    const canvas = this.canvasRef.current
-    if (!canvas || !this.tooltipsRef.current) {
+  const resetView = () => {
+    if (!canvasRef.current) {
       return
     }
-    const canvasRect = canvas.getBoundingClientRect()
-    const context = canvas.getContext('2d')
-    Array.from(this.tooltipsRef.current.children).forEach((child) => {
-      const tooltipX = child.dataset.x
-      const tooltipY = child.dataset.y
+    const context = canvasRef.current.getContext('2d')
 
-      const screenCoords = context.untransformedPoint(tooltipX, tooltipY)
-      const relativeX = screenCoords.x / canvasRect.width
-      const relativeY = screenCoords.y / canvasRect.height
-      child.style.setProperty('left', `${relativeX * 100}%`)
-      child.style.setProperty('top', `${relativeY * 100}%`)
-    })
+    const transform = context.getTransform()
+    const maxScale = Math.max(transform.a, transform.d)
+    context.setTransform(maxScale, 0, 0, maxScale, transform.e, transform.f)
+    redraw('view reset')
   }
-
-  getMarkerTouchingCursor = () => {
-    const canvas = this.canvasRef.current
-    if (!canvas) {
-      return null
+  
+  // scale at which the provided image totally covers the canvas
+  const [containmentScale, setContainmentScale] = useState(1)
+  
+  const maxZoom = useMemo(() => {
+    if (props.allowContainmentZoom) {
+      return Math.max(props.maxZoom, containmentScale)
     }
-    const context = canvas.getContext('2d')
-
-    const close = {}
-
-    const cursorPt = this.getCursorCoords()
-    if (cursorPt === null) {
-      return null
+    return props.maxZoom
+  }, [props.allowContainmentZoom, props.maxZoom, containmentScale])
+  const minZoom = useMemo(() => {
+    if (props.allowContainmentZoom) {
+      return Math.min(props.minZoom, containmentScale)
     }
-
-    this.getMarkerChildren().map(child => {
-      if (!(
-        typeof child.props.onClick === 'function' ||
-        typeof child.props.onDoubleClick === 'function' ||
-        typeof child.props.onDragTick === 'function' ||
-        typeof child.props.onDragEnd === 'function'
-      )) {
+    return props.minZoom
+  }, [props.allowContainmentZoom, props.minZoom, containmentScale])
+  
+  const updateContainmentScale = () => {
+    if (!canvasRef.current || !mapImage.current) {
+      return
+    }
+    const imgWidth = mapImage.current.width
+    const imgHeight = mapImage.current.height
+    if (imgWidth && imgHeight) {
+      const widthScaledHeight = (imgHeight / imgWidth) * canvasRef.current.width
+      let updatedScale = 1
+      if (widthScaledHeight > canvasRef.current.height) {
+        updatedScale = canvasRef.current.height / imgHeight
+      }
+      else {
+        updatedScale = canvasRef.current.width / imgWidth
+      }
+      setContainmentScale(updatedScale)
+    }
+  }
+  const [imageInitialised, setImageInitialised] = useState(false)
+  const handleImageLoad = useMemo(() => {
+    return () => {
+      if (!canvasRef.current || !mapImage.current) {
         return
       }
-      const HOVER_DIST = (child.props.size / 2) * child.props.dragZoneScale
-      const HOVER_DIST_SQ = HOVER_DIST * HOVER_DIST
-
-      let distSq
-      if (child.props.scaleWithZoom) {
-        distSq = (
-          Math.pow(child.props.coords.x - cursorPt.x, 2) +
-          Math.pow(child.props.coords.y - cursorPt.y, 2)
+      const context = canvasRef.current.getContext('2d')
+      const imgWidth = mapImage.current.width
+      const imgHeight = mapImage.current.height
+      if (imgWidth && imgHeight) {
+        const containing = (
+          (!imageInitialised && props.containInitialImage) ||
+          (imageInitialised && props.containUpdatedImage)
         )
+        const widthScaledHeight = (imgHeight / imgWidth) * canvasRef.current.width
+        const heightScaledWidth = (imgWidth / imgHeight) * canvasRef.current.height
+        let containmentScale = 1
+        if (widthScaledHeight > canvasRef.current.height) {
+          containmentScale = canvasRef.current.height / imgHeight
+          if (containing) {
+            let transform = context.getTransform()
+            let scaleAdjust = containmentScale / transform.d
+            context.scale(scaleAdjust, scaleAdjust)
+            transform = context.getTransform()
+            context.translate(
+              (-transform.e + (canvasRef.current.width / 2) - (heightScaledWidth / 2)) / transform.a,
+              -transform.f / transform.d
+            )
+          }
+        }
+        else {
+          containmentScale = canvasRef.current.width / imgWidth
+          if (containing) {
+            let transform = context.getTransform()
+            const scaleAdjust =  containmentScale / transform.a
+            context.scale(scaleAdjust, scaleAdjust)
+            transform = context.getTransform()
+            context.translate(
+              -transform.e / transform.a,
+              (-transform.f + (canvasRef.current.height / 2) - (widthScaledHeight / 2)) / transform.d
+            )
+          }
+        }
+        updateContainmentScale()
+        redraw('image load')
+        if (!imageInitialised) {
+          setImageInitialised(true)
+        }
+      }
+    }
+  }, [imageInitialised])
+
+  const resize = useMemo(() => {
+    return () => {
+      if (!canvasRef.current) {
+        return
+      }
+    
+      if (cursorX.current !== null && cursorY.current !== null)
+      {
+        const cursorXProportion = cursorX.current / canvasRef.current.clientWidth
+        const cursorYProportion = cursorY.current / canvasRef.current.clientHeight
+    
+        cursorX.current = cursorXProportion * canvasRef.current.width
+        cursorY.current = cursorYProportion * canvasRef.current.height
+      }
+  
+      canvasRef.current.width = canvasRef.current.clientWidth
+      canvasRef.current.height = canvasRef.current.clientHeight
+  
+      // reset the transforms
+      // todo: rescale the transforms to match the new size instead
+      updateContainmentScale()
+      resetView()
+    }
+  }, [resetView])
+  useEffect(() => {
+    window.addEventListener('resize', resize)
+    return () => {
+      window.removeEventListener('resize', resize)
+    }
+  }, [resize])
+
+  const handleClick = useMemo((event) => {
+    return () => {
+      const pt = getCursorCoords()
+      if (pt === null) {
+        return
+      }
+  
+      let clickedMarker = null
+      if (draggingMarkerKey.current) {
+        clickedMarker = getMarkerChild(draggingMarkerKey.current)
+      }
+      if (clickedMarker) {
+        if (typeof clickedMarker.props.onClick === 'function') {
+          clickedMarker.props.onClick()
+        }
       } else {
-        const beaconScreenPt = context.untransformedPoint(
-          child.props.coords.x,
-          child.props.coords.y
-        )
-        distSq = (
-          Math.pow(beaconScreenPt.x - this.cursorX, 2) +
-          Math.pow(beaconScreenPt.y - this.cursorY, 2)
-        )
-      }
-
-      if (distSq < HOVER_DIST_SQ) {
-        close[child.props.markerKey] = distSq
-      }
-    })
-    let closestDist = -1
-    let closest = []
-    for (const key in close) {
-      const distSq = close[key]
-      if (closestDist === -1 || distSq < closestDist) {
-        closestDist = distSq
-        closest = []
-        closest.push(key)
-      } else if (distSq === closestDist) {
-        closest.push(key)
+        if (typeof props.onClick === 'function') {
+          props.onClick(pt)
+        }
       }
     }
-    return closest[0]
-  }
-
-  zoom = (clicks) => {
-    const canvas = this.canvasRef.current
-    if (!canvas) {
-      return
-    }
-    const context = canvas.getContext('2d')
-
-    const pt = this.getCursorCoords()
+  }, [props.onClick])
+  const dragTick = (draggingMarkerKey) => {
+    const pt = getCursorCoords()
     if (pt === null) {
       return
     }
-    context.translate(pt.x, pt.y)
-    let factor = Math.pow(SCALE_FACTOR, clicks)
-    // limit zoom to given ranges in props
-    const transform = context.getTransform()
-    if (factor > 1) {
-      const maxScale = Math.max(transform.a, transform.d)
-      if (maxScale * factor > this.getMaxZoom()) {
-        factor = this.getMaxZoom() / maxScale
-      }
-    } else {
-      const minScale = Math.max(transform.a, transform.d)
-      if (minScale * factor < this.getMinZoom()) {
-        factor = this.getMinZoom() / minScale
-      }
-    }
-    context.scale(factor, factor)
-    context.translate(-pt.x, -pt.y)
-    this.redraw()
-  }
-
-  handleScroll = (event) => {
-    this.animationCancel = true
-
-    const delta = event.wheelDelta ? event.wheelDelta / 40 : event.detail ? -event.detail : 0
-    if (delta) {
-      this.zoom(delta)
-    }
-    return event.preventDefault() && false
-  }
-
-  handleClick = (event) => {
-    const pt = this.getCursorCoords()
-    if (pt === null) {
-      return
-    }
-
-    let clickedMarker = null
-    if (this.draggingMarkerKey) {
-      clickedMarker = this.getMarkerChild(this.draggingMarkerKey)
-    }
-    if (clickedMarker) {
-      if (typeof clickedMarker.props.onClick === 'function') {
-        clickedMarker.props.onClick()
-      }
-    } else {
-      if (typeof this.props.onClick === 'function') {
-        this.props.onClick(pt)
-      }
-    }
-  }
-
-  handleDoubleClick = (event) => {
-    const canvas = this.canvasRef.current
-    if (!canvas) {
-      return
-    }
-    const context = canvas.getContext('2d')
-
-    let clickedMarker = null
-    if (this.draggingMarkerKey) {
-      clickedMarker = this.getMarkerChild(this.draggingMarkerKey)
-    }
-    if (clickedMarker) {
-      if (typeof clickedMarker.props.onDoubleClick === 'function') {
-        clickedMarker.props.onDoubleClick()
-      }
-    } else {
-      if (typeof this.props.onDoubleClick === 'function') {
-        const pt = context.transformedPoint(this.cursorX, this.cursorY)
-        this.props.onDoubleClick(pt)
-      }
-    }
-  }
-
-  dragTick = (draggingMarkerKey) => {
-    const pt = this.getCursorCoords()
-    if (pt === null) {
-      return
-    }
-    const draggingMarker = this.getMarkerChild(draggingMarkerKey)
+    const draggingMarker = getMarkerChild(draggingMarkerKey)
     if (draggingMarker && typeof draggingMarker.props.onDragTick === 'function') {
       draggingMarker.props.onDragTick(pt)
     }
   }
-
-  getDropZoneTouchingCursor = () => {
-    const pt = this.getCursorCoords()
+  const dragEnd = (draggingMarkerKey) => {
+    const pt = getCursorCoords()
     if (pt === null) {
       return
     }
-    // go through dropzones and see if it has landed in any
-    let droppedZone = null
-    this.getDropZoneChildren().map(dropZone => {
-      const [topLeft, bottomRight, valid] = this.getScreenPositionCoords(dropZone.props)
-      if (!valid) {
-        return
-      }
-      if (
-        pt.x >= topLeft.x &&
-        pt.x <= bottomRight.x &&
-        pt.y >= topLeft.y &&
-        pt.y <= bottomRight.y
-      ) {
-        droppedZone = dropZone
-      }
-    })
-    return droppedZone
-  }
-
-  dragEnd = (draggingMarkerKey) => {
-    const pt = this.getCursorCoords()
-    if (pt === null) {
-      return
-    }
-    const draggedMarker = this.getMarkerChild(draggingMarkerKey)
+    const draggedMarker = getMarkerChild(draggingMarkerKey)
     if (!draggedMarker) {
       return
     }
 
-    const droppedZone = this.getDropZoneTouchingCursor()
+    const droppedZone = getDropZoneTouchingCursor()
     if (droppedZone) {
       if (typeof draggedMarker.props.onDragCancel === 'function') {
         draggedMarker.props.onDragCancel()
@@ -776,45 +531,324 @@ export default class Map extends React.Component {
     }
   }
 
-  panTo = (coords) => {
-    this.animationCancel = false
-    this.animationStart = null
-    this.animationCoords = coords
-    window.requestAnimationFrame(this.animate)
-  }
+  const handleDocumentMouseMove = useMemo(() => {
+    return (event) => {
+      if (!canvasRef.current) {
+        return
+      }
+      const context = canvasRef.current.getContext('2d')
+      
+      const lastPt = getCursorCoords()
+      const rect = canvasRef.current.getBoundingClientRect()
+      if (event) {
+        cursorX.current = event.clientX - rect.x
+        cursorY.current = event.clientY - rect.y
+      }
+      
+      if (!clickPoint.current) {
+        updateCursor()
+        return
+      }
+  
+      if (+(new Date()) > clickTime.current + props.clickGraceTime) {
+        dragged.current = true
+      }
+  
+      if (draggingMarkerKey.current) {
+        if (new Date() > clickTime.current + props.minDragTime) {
+          dragTick(draggingMarkerKey.current)
+        }
+      } else {
+        const pt = getCursorCoords()
+        if (pt === null || lastPt === null || !mapImage.current) {
+          return
+        }
+        const transform = context.getTransform()
+        let translateX = pt.x - lastPt.x
+        let translateY = pt.y - lastPt.y
+        if (translateX > 0) {
+          const xLimit = rect.width - props.overpan
+          if (transform.e > xLimit) {
+            translateX = 0
+          } else if (transform.e + translateX > xLimit) {
+            translateX = xLimit - transform.e
+          }
+        } else if (translateX < 0) {
+          const xLimit = -(mapImage.current.width * transform.a) + props.overpan
+          if (transform.e < xLimit) {
+            translateX = 0
+          } else if (transform.e + translateX < xLimit) {
+            translateX = xLimit - transform.e
+          }
+        }
+        if (translateY > 0) {
+          const yLimit = rect.height - props.overpan
+          if (transform.f > yLimit) {
+            translateY = 0
+          } else if (transform.f + translateY > yLimit) {
+            translateY = yLimit - transform.f
+          }
+        } else if (translateY < 0) {
+          const yLimit = -(mapImage.current.height * transform.d) + props.overpan
+          if (transform.f < yLimit) {
+            translateY = 0
+          } else if (transform.f + translateY < yLimit) {
+            translateY = yLimit - transform.f
+          }
+        }
+        context.translate(translateX, translateY)
+        redraw('pan')
+      }
+    }
+  }, [props.clickGraceTime, props.minDragTime, props.overpan])
+  useEffect(() => {
+    document.addEventListener('mousemove', handleDocumentMouseMove, false)
+    return () => {
+      document.removeEventListener('mousemove', handleDocumentMouseMove, false)
+    }
+  }, [handleDocumentMouseMove])
 
-  animate = (timestamp) => {
-    if (this.animationCancel) {
-      this.animationStart = null
-      this.animationCancel = false
+  const handleDocumentMouseUp = useMemo(() => {
+    return () => {
+      if (dragTimeout.current) {
+        window.clearTimeout(dragTimeout.current)
+      }
+      if (
+        draggingMarkerKey.current &&
+        dragged.current &&
+        new Date() > clickTime.current + props.minDragTime
+      ) {
+        dragEnd(draggingMarkerKey.current)
+      }
+      draggingMarkerKey.current = null
+      clickPoint.current = null
+      dragged.current = false
+      redraw('mouse up')
+    }
+  }, [props.minDragTime])
+  useEffect(() => {
+    if (!canvasRef.current) {
+      return
+    }
+    canvasRef.current.addEventListener('mouseup', handleCanvasMouseUp)
+    return () => {
+      canvasRef.current.removeEventListener('mouseup', handleCanvasMouseUp)
+    }
+  }, [handleDocumentMouseUp])
+
+  const handleCanvasMouseDown = useMemo(() => {
+    return () => {
+      animationCancel.current = true
+  
+      document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = 'none'
+      clickPoint.current = getCursorCoords()
+      dragTimeout.current = window.setTimeout(handleDocumentMouseMove, props.minDragTime)
+      clickTime.current = +(new Date())
+      dragged.current = false
+      draggingMarkerKey.current = getMarkerTouchingCursor()
+    }
+  }, [props.minDragTime, handleDocumentMouseMove])
+  useEffect(() => {
+    if (!canvasRef.current) {
+      return
+    }
+    canvasRef.current.addEventListener('mousedown', handleCanvasMouseDown, false)
+    return () => {
+      canvasRef.current.removeEventListener('mousedown', handleCanvasMouseDown, false)
+    }
+  }, [handleCanvasMouseDown])
+
+  const handleCanvasMouseUp = useMemo(() => {
+    return () => {
+      if (!dragged.current) {
+        handleClick()
+      }
+    }
+  }, [handleClick])
+  useEffect(() => {
+    document.addEventListener('mouseup', handleDocumentMouseUp, false)
+    return () => {
+      document.removeEventListener('mouseup', handleDocumentMouseUp, false)
+    }
+  }, [handleDocumentMouseUp])
+
+  const zoom = useMemo(() => {
+    return (clicks) => {
+      if (!canvasRef.current) {
+        return
+      }
+      const context = canvasRef.current.getContext('2d')
+  
+      const pt = getCursorCoords()
+      if (pt === null) {
+        return
+      }
+      context.translate(pt.x, pt.y)
+      let factor = Math.pow(SCALE_FACTOR, clicks)
+      // limit zoom to given ranges in props
+      const transform = context.getTransform()
+      if (factor > 1) {
+        const maxScale = Math.max(transform.a, transform.d)
+        if (maxScale * factor > maxZoom) {
+          factor = maxZoom / maxScale
+        }
+      } else {
+        const minScale = Math.max(transform.a, transform.d)
+        if (minScale * factor < minZoom) {
+          factor = minZoom / minScale
+        }
+      }
+      context.scale(factor, factor)
+      context.translate(-pt.x, -pt.y)
+      redraw('zoom')
+    }
+  }, [maxZoom, minZoom])
+  const handleScroll = useMemo(() => {
+    return (event) => {
+      animationCancel.current = true
+  
+      const delta = event.wheelDelta ? event.wheelDelta / 40 : event.detail ? -event.detail : 0
+      if (delta) {
+        zoom(delta)
+      }
+      return event.preventDefault() && false
+    }
+  }, [zoom])
+  useEffect(() => {
+    if (!canvasRef.current) {
+      return
+    }
+    canvasRef.current.addEventListener('DOMMouseScroll', handleScroll, false)
+    canvasRef.current.addEventListener('mousewheel', handleScroll, false)
+    return () => {
+      canvasRef.current.removeEventListener('DOMMouseScroll', handleScroll, false)
+      canvasRef.current.removeEventListener('mousewheel', handleScroll, false)
+    }
+  }, [handleScroll])
+
+  const handleDocumentKeyDown = (event) => {
+    if (event.which === KEYDOWN_ESCAPE) {
+      const draggingMarker = getMarkerChild(draggingMarkerKey.current)
+      if (draggingMarker && typeof draggingMarker.props.onDragCancel === 'function') {
+        draggingMarker.props.onDragCancel()
+      }
+      clickPoint.current = null
+      dragged.current = false
+      redraw('mouse down')
+    }
+  }
+  useEffect(() => {
+    document.addEventListener('keydown', handleDocumentKeyDown, false)
+    return () => {
+      document.removeEventListener('keydown', handleDocumentKeyDown, false)
+    }
+  }, [])
+
+  const handleDragOver = (event) => {
+    if (!canvasRef.current) {
+      return
+    }
+    const rect = canvas.getBoundingClientRect()
+    if (event) {
+      cursorX.current = event.clientX - rect.x
+      cursorY.current = event.clientY - rect.y
+    }
+  }
+  useEffect(() => {
+    if (!canvasRef.current) {
+      return
+    }
+    canvasRef.current.addEventListener('dragover', handleDragOver, false)
+    return () => {
+      canvasRef.current.removeEventListener('dragover', handleDragOver, false)
+    }
+  }, [])
+  
+  const handleDoubleClick = useMemo(() => {
+    return (event) => {
+      if (!canvasRef.current) {
+        return
+      }
+      const context = canvasRef.current.getContext('2d')
+  
+      let clickedMarker = null
+      if (draggingMarkerKey.current) {
+        clickedMarker = getMarkerChild(draggingMarkerKey.current)
+      } else {
+        const hovered = getMarkerTouchingCursor()
+        if (hovered) {
+          clickedMarker = getMarkerChild(hovered)
+        }
+      }
+      if (clickedMarker) {
+        if (typeof clickedMarker.props.onDoubleClick === 'function') {
+          clickedMarker.props.onDoubleClick()
+        }
+      } else {
+        if (typeof props.onDoubleClick === 'function') {
+          const pt = context.transformedPoint(cursorX.current, cursorY.current)
+          props.onDoubleClick(pt)
+        }
+      }
+    }
+  }, [props.onDoubleClick])
+  useEffect(() => {
+    if (!canvasRef.current) {
+      return
+    }
+    canvasRef.current.addEventListener('dblclick', handleDoubleClick)
+    return () => {
+      canvasRef.current.removeEventListener('dblclick', handleDoubleClick)
+    }
+  }, [handleDoubleClick])
+
+  useEffect(() => {
+    mapImage.current = new Image()
+    mapImage.current.src = props.image
+    mapImage.current.onload = handleImageLoad
+  }, [props.image])
+  useEffect(() => {
+    if (mapImage.current) {
+      mapImage.current.onload = handleImageLoad
+    }
+  }, [handleImageLoad])
+
+  useEffect(() => {
+    resize()
+  }, [])
+
+  const animate = (timestamp) => {
+    if (animationCancel.current) {
+      animationStart.current = null
+      animationCancel.current = false
+      animationActive.current = false
       return
     }
 
-    const canvas = this.canvasRef.current
-    if (!canvas) {
+    if (!canvasRef.current) {
       // abort and try later
       window.requestAnimationFrame(this.animate)
       return
     }
-    const rect = canvas.getBoundingClientRect()
-    const context = canvas.getContext('2d')
+    const rect = canvasRef.current.getBoundingClientRect()
+    const context = canvasRef.current.getContext('2d')
     const transform = context.getTransform()
 
-    if (!this.animationStart) {
-      this.animationStart = timestamp
-      this.animationLastTimestamp = timestamp
+    if (!animationStart.current) {
+      animationStart.current = timestamp
+      animationLastTimestamp.current = timestamp
     }
 
-    const deltaMs = timestamp - this.animationLastTimestamp
-    this.animationLastTimestamp = timestamp
+    const deltaMs = timestamp - animationLastTimestamp.current
+    animationLastTimestamp.current = timestamp
 
     let panDone = true
-    if (this.animationCoords) {
+    if (animationCoords.current) {
       const current = {
         x: ((rect.width / 2) - transform.e) / transform.a,
         y: ((rect.height / 2) - transform.f) / transform.d,
       }
-      const desired = this.animationCoords
+      const desired = animationCoords.current
 
       const diff = {
         x: desired.x - current.x,
@@ -827,42 +861,69 @@ export default class Map extends React.Component {
         context.translate(-diff.x * delta, -diff.y * delta)
       } else {
         context.translate(-diff.x, -diff.y)
-        this.animationCoords = null
+        animationCoords.current = null
       }
     }
 
-    this.redraw()
+    redraw('animation')
 
+    animationActive.current = !panDone
     if (!panDone) {
-      window.requestAnimationFrame(this.animate)
+      window.requestAnimationFrame(animate)
     }
   }
-
-  handleDragOver = (event) => {
-    const canvas = this.canvasRef.current
-    if (!canvas) {
-      return
+  const panTo = (coords) => {
+    animationCancel.current = false
+    animationStart.current = null
+    animationCoords.current = coords
+    if (!animationActive.current) {
+      window.requestAnimationFrame(animate)
     }
-    const rect = canvas.getBoundingClientRect()
-    if (event) {
-      this.cursorX = event.clientX - rect.x
-      this.cursorY = event.clientY - rect.y
-    }
+    animationActive.current = true
   }
+  useEffect(() => {
+    if (props.panTo) {
+      panTo(props.panTo)
+    }
+  }, [props.panTo])
 
-  render() {
-    return (
-      <div style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        overflow: 'hidden',
-      }}>
-        <canvas ref={this.canvasRef} style={{width: '100%', height: '100%'}} />
-        <div ref={this.tooltipsRef}>
-          {this.getTooltipChildren()}
-        </div>
+  return (
+    <div style={{
+      position: 'relative',
+      width: '100%',
+      height: '100%',
+      overflow: 'hidden',
+    }}>
+      <canvas ref={canvasRef} style={{width: '100%', height: '100%'}} />
+      <div ref={tooltipsRef}>
+        {tooltipChildren}
       </div>
-    )
-  }
+    </div>
+  )
 }
+Map.propTypes = {
+  image: PropTypes.string,
+  children: PropTypes.node,
+  onClick: PropTypes.func,
+  onDoubleClick: PropTypes.func,
+  minZoom: PropTypes.number,
+  maxZoom: PropTypes.number,
+  overpan: PropTypes.number,
+  minDragTime: PropTypes.number,
+  clickGraceTime: PropTypes.number,
+  containInitialImage: PropTypes.bool, // begin with zoom/translation that contains intial image
+  containUpdatedImage: PropTypes.bool, // update zoom/translation to contain a change of image
+  allowContainmentZoom: PropTypes.bool, // allow zooming beyond min/max if image is not contained
+}
+Map.defaultProps = {
+  minZoom: 0.2,
+  maxZoom: 5,
+  overpan: 30,
+  minDragTime: 300,
+  clickGraceTime: 100,
+  containInitialImage: true,
+  containUpdatedImage: true,
+  allowContainmentZoom: true,
+}
+
+export { Map }

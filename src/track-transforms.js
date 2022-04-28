@@ -1,7 +1,7 @@
 /*
   Wrapper to track matrix transforms on a 2d canvas
  */
-export default function trackTransforms(ctx) {
+export function trackTransforms(ctx) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
   let xform = svg.createSVGMatrix()
   ctx.getTransform = () => {
