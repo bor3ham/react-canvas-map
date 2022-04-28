@@ -5,7 +5,7 @@ import { Map, Marker, DropZone } from 'react-canvas-map'
 const markerImage = new Image()
 markerImage.src = `../static/marker-blue.svg`
 
-function DropZoneExample(props) {
+function DropZoneExample() {
   const [markers, setMarkers] = useState([])
   const [dragState, setDragState] = useState(null)
   const destroyMarker = (index) => {
@@ -44,7 +44,7 @@ function DropZoneExample(props) {
                 }}
                 onDragEnd={(coords) => {
                   setMarkers((prevMarkers) => {
-                    return markers.map((oldMarker, oldMarkerIndex) => {
+                    return prevMarkers.map((oldMarker, oldMarkerIndex) => {
                       if (oldMarkerIndex === markerIndex) {
                         return coords
                       }

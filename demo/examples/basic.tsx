@@ -7,7 +7,7 @@ markerOneImage.src = './static/marker-blue.svg'
 const markerTwoImage = new Image()
 markerTwoImage.src = './static/marker-red.svg'
 
-function BasicExample(props) {
+function BasicExample() {
   const [markerOneCoords, setMarkerOneCoords] = useState({x: 100, y: 200})
   const [markerTwoCoords, setMarkerTwoCoords] = useState({x: 150, y: 20})
   return (

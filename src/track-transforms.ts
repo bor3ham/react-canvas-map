@@ -1,14 +1,14 @@
 /*
   Wrapper to track matrix transforms on a 2d canvas
  */
-export function trackTransforms(ctx) {
+function trackTransforms(ctx) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
   let xform = svg.createSVGMatrix()
   ctx.getTransform = () => {
     return xform
   }
 
-  const savedTransforms = []
+  let savedTransforms: DOMMatrix[] = []
   const save = ctx.save
   ctx.save = () => {
     savedTransforms.push(xform.translate(0, 0))
@@ -17,7 +17,9 @@ export function trackTransforms(ctx) {
 
   const restore = ctx.restore
   ctx.restore = () => {
-    xform = savedTransforms.pop()
+    if (savedTransforms.length > 0) {
+      xform = savedTransforms.pop()!
+    }
     return restore.call(ctx)
   }
 
@@ -77,3 +79,5 @@ export function trackTransforms(ctx) {
     return pt.matrixTransform(xform)
   }
 }
+
+export { trackTransforms }

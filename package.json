@@ -13,9 +13,7 @@
     "build": "node scripts/build.js",
     "prepare": "npm run build"
   },
-  "dependencies": {
-    "prop-types": "^15.7.2"
-  },
+  "dependencies": {},
   "peerDependencies": {
     "react": "~16.14.0"
   },

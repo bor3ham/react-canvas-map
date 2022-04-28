@@ -1,9 +1,9 @@
 import { init } from 'uptick-demo-site'
 
-import './examples/basic.jsx'
-import './examples/create-destroy.jsx'
-import './examples/drop-zone.jsx'
-import './examples/tooltips.jsx'
-import './stress-test.jsx'
+import './examples/basic.tsx'
+import './examples/create-destroy.tsx'
+import './examples/drop-zone.tsx'
+import './examples/tooltips.tsx'
+import './stress-test.tsx'
 
 init()

@@ -5,7 +5,7 @@ import { Map, Marker, Tooltip } from 'react-canvas-map'
 const markerImage = new Image()
 markerImage.src = `../static/marker-blue.svg`
 
-function TooltipsExample(props) {
+function TooltipsExample() {
   const [markers] = useState([
     {x: 100, y: 200},
     {x: 200, y: 500},

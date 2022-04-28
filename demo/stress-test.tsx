@@ -30,7 +30,7 @@ function randomPoint() {
   }
 }
 
-function StressTest(props) {
+function StressTest() {
   const [mapImage, setMapImage] = useState(randomMap())
   const randomiseImage = () => {
     setMapImage(randomMap())
@@ -140,7 +140,7 @@ function StressTest(props) {
                   image={markerImage}
                   size={10}
                   onDoubleClick={() => {
-                    setMarkers((prevMarkers) => (prevMarkers.filter((oldMarker, oldMarkerIndex) => {
+                    setMarkers((prevMarkers) => (prevMarkers.filter((_, oldMarkerIndex) => {
                       return oldMarkerIndex != markerIndex
                     })))
                   }}

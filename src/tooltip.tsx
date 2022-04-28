@@ -1,34 +1,51 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 
-import { coordsShape } from './shapes.js'
+import { Coords } from './types'
 
-function Tooltip(props) {
+type Props = {
+  coords: Coords
+  children: React.ReactNode
+  style: React.CSSProperties
+  arrowSize: number
+  tooltipStyle: React.CSSProperties
+  width: string
+  height: string
+}
+
+const Tooltip: React.FC<Props> = ({
+  coords,
+  children,
+  style,
+  arrowSize = 8,
+  tooltipStyle,
+  width = '20rem',
+  height,
+}) => {
   return (
     <div
       style={{
         position: 'absolute',
-        width: props.width,
-        height: props.height,
+        width: width,
+        height: height,
         transform: 'translateX(-50%)',
         userSelect: 'text',
-        marginTop: `-${props.arrowSize}px`,
+        marginTop: `-${arrowSize}px`,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'stretch',
-        ...props.style,
+        ...style,
       }}
-      data-x={props.coords.x}
-      data-y={props.coords.y}
+      data-x={coords.x}
+      data-y={coords.y}
     >
-      {props.arrowSize > 0 && (
+      {arrowSize > 0 && (
         <>
           <span
             style={{
               display: 'inline-block',
               alignSelf: 'center',
               borderColor: 'transparent transparent #ddd',
-              borderWidth: `${props.arrowSize + 2}px`,
+              borderWidth: `${arrowSize + 2}px`,
               borderStyle: 'solid',
             }}
           />
@@ -36,9 +53,9 @@ function Tooltip(props) {
             style={{
               alignSelf: 'center',
               display: 'inline-block',
-              marginTop: `-${props.arrowSize * 2}px`,
+              marginTop: `-${arrowSize * 2}px`,
               borderColor: 'transparent transparent #fff',
-              borderWidth: `${props.arrowSize}px`,
+              borderWidth: `${arrowSize}px`,
               borderStyle: 'solid',
               zIndex: '1',
             }}
@@ -51,25 +68,12 @@ function Tooltip(props) {
         padding: '0.5rem',
         boxSizing: 'border-box',
         marginTop: '-1px',
-        ...props.tooltipStyle,
+        ...tooltipStyle,
       }}>
-        {props.children}
+        {children}
       </div>
     </div>
   )
-}
-Tooltip.propTypes = {
-  coords: coordsShape.isRequired,
-  children: PropTypes.node,
-  style: PropTypes.object,
-  arrowSize: PropTypes.number,
-  tooltipStyle: PropTypes.object,
-  width: PropTypes.string,
-  height: PropTypes.string,
-}
-Tooltip.defaultProps = {
-  width: '20rem',
-  arrowSize: 8,
 }
 
 export { Tooltip }

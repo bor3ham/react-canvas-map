@@ -5,7 +5,7 @@ import { Map, Marker } from 'react-canvas-map'
 const markerImage = new Image()
 markerImage.src = '../static/marker-blue.svg'
 
-function CreateDestroyExample(props) {
+function CreateDestroyExample() {
   const [markers, setMarkers] = useState([])
   return (
     <>
