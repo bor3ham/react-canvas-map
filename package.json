@@ -8,7 +8,7 @@
   "license": "MIT",
   "private": false,
   "scripts": {
-    "publish:demo": "git branch -D gh-pages; git push origin --delete gh-pages; git checkout -b gh-pages && cd demo && yarn && yarn build && cd .. && git add . && git add -f demo/dist && git add -f demo/node_modules/uptick-demo-site/dist && git commit -m \"Demo site build\" && git push origin gh-pages && git checkout master && git push origin `git subtree split --prefix demo gh-pages`:gh-pages --force",
+    "publish:demo": "git branch -D gh-pages; git push origin --delete gh-pages; git checkout -b gh-pages && cd demo && npm install && cd .. && git add . && git add -f demo/dist && git add -f demo/node_modules/uptick-demo-site/dist && git commit -m \"Demo site build\" && git push origin gh-pages && git checkout master && git push origin `git subtree split --prefix demo gh-pages`:gh-pages --force",
     "watch": "node scripts/watch.js",
     "build": "node scripts/build.js",
     "prepare": "npm run build"
