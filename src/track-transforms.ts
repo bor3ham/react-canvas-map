@@ -1,3 +1,11 @@
+interface TrackedContext extends CanvasRenderingContext2D {
+  getTransform(): DOMMatrix
+  transformedPoint(x: number, y: number): DOMPoint
+  untransformedPoint(x: number, y: number): DOMPoint
+}
+
+export type { TrackedContext }
+
 /*
   Wrapper to track matrix transforms on a 2d canvas
  */

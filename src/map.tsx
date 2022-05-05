@@ -1,6 +1,7 @@
 import React, { useRef, useState, useMemo, useEffect } from 'react'
 
 import { trackTransforms } from './track-transforms'
+import type { TrackedContext } from './track-transforms'
 import { Marker } from './marker'
 import { DropZone } from './drop-zone'
 import { Tooltip } from './tooltip'
@@ -13,8 +14,8 @@ type Props = {
   image: string
   children?: React.ReactNode
 
-  onClick?(): void
-  onDoubleClick?(): void
+  onClick?(pt: Coords): void
+  onDoubleClick?(pt: Coords): void
 
   minZoom: number
   maxZoom: number
@@ -56,31 +57,31 @@ const Map: React.FC<Props> = ({
 
   panTo,
 }) => {
-  const canvasRef = useRef()
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     if (canvasRef.current) {
       const context = canvasRef.current.getContext('2d')
       trackTransforms(context)
     }
   }, [])
-  const mapImage = useRef()
+  const mapImage = useRef<HTMLImageElement>()
 
   const dragged = useRef(false)
-  const draggingMarkerKey = useRef(null)
-  const dragTimeout = useRef(null)
-  const clickPoint = useRef(null)
+  const draggingMarkerKey = useRef<string | null>(null)
+  const dragTimeout = useRef<number | undefined>(undefined)
+  const clickPoint = useRef<DOMPoint | null>(null)
   const clickTime = useRef(+(new Date()))
-  const cursorX = useRef(null)
-  const cursorY = useRef(null)
+  const cursorX = useRef<number | null>(null)
+  const cursorY = useRef<number | null>(null)
 
   const animationActive = useRef(false)
   const animationCancel = useRef(false)
   const animationStart = useRef(null)
-  const animationCoords = useRef(null)
+  const animationCoords = useRef<Coords | null>(null)
   const animationLastTimestamp = useRef(+(new Date()))
 
-  const markers = useRef()
-  const dropZones = useRef()
+  const markers = useRef<React.ReactElement[]>(new Array())
+  const dropZones = useRef<React.ReactElement[]>(new Array())
   const flatChildren = useMemo(() => {
     const allChildren: React.ReactElement[] = []
     const getChildren = (child) => {
@@ -100,7 +101,7 @@ const Map: React.FC<Props> = ({
   markers.current = flatChildren.filter(child => {
     return child.type && child.type === Marker
   })
-  const getMarkerChild: React.ReactElement = (key) => {
+  const getMarkerChild = (key: string) : React.ReactElement | undefined => {
     return markers.current.find(child => {
       return child && child.props.markerKey === key
     })
@@ -118,7 +119,10 @@ const Map: React.FC<Props> = ({
     if (!canvasRef.current) {
       return null
     }
-    const context = canvasRef.current.getContext('2d')
+    const context = canvasRef.current.getContext('2d') as TrackedContext
+    if (!context) {
+      return null
+    }
     if (
       typeof cursorX.current !== 'number' || isNaN(cursorX.current) ||
       typeof cursorY.current !== 'number' || isNaN(cursorY.current)
@@ -139,7 +143,10 @@ const Map: React.FC<Props> = ({
       return {valid: false} as ScreenPositionCoords
     }
     const rect = canvasRef.current.getBoundingClientRect()
-    const context = canvasRef.current.getContext('2d')
+    const context = canvasRef.current.getContext('2d') as TrackedContext
+    if (!context) {
+      return {valid: false} as ScreenPositionCoords
+    }
 
     let topLeft = {x: 0, y: 0}
     let bottomRight = {x: 100, y: 100}
@@ -165,13 +172,13 @@ const Map: React.FC<Props> = ({
     bottomRight = context.transformedPoint(bottomRight.x, bottomRight.y)
     return {topLeft, bottomRight, valid: true} as ScreenPositionCoords
   }
-  const getDropZoneTouchingCursor: React.ReactElement = () => {
+  const getDropZoneTouchingCursor = () : React.ReactElement | undefined => {
     const pt = getCursorCoords()
     if (pt === null) {
-      return
+      return undefined
     }
     // go through dropzones and see if it has landed in any
-    let droppedZone = null
+    let droppedZone: React.ReactElement | undefined = undefined
     dropZones.current.map(dropZone => {
       const {
         right,
@@ -207,7 +214,10 @@ const Map: React.FC<Props> = ({
     if (!canvasRef.current) {
       return null
     }
-    const context = canvasRef.current.getContext('2d')
+    const context = canvasRef.current.getContext('2d') as TrackedContext
+    if (!context) {
+      return null
+    }
 
     const close = {}
 
@@ -254,8 +264,8 @@ const Map: React.FC<Props> = ({
           coords.y
         )
         distSq = (
-          Math.pow(beaconScreenPt.x - cursorX.current, 2) +
-          Math.pow(beaconScreenPt.y - cursorY.current, 2)
+          Math.pow(beaconScreenPt.x - cursorX.current!, 2) +
+          Math.pow(beaconScreenPt.y - cursorY.current!, 2)
         )
       }
 
@@ -275,7 +285,7 @@ const Map: React.FC<Props> = ({
         closest.push(key)
       }
     }
-    return closest[0]
+    return closest[0] || null
   }
   const updateCursor = () => {
     if (!canvasRef.current) {
@@ -289,17 +299,20 @@ const Map: React.FC<Props> = ({
     }
   }
 
-  const tooltipsRef = useRef()
+  const tooltipsRef = useRef<HTMLDivElement>(null)
   const updateTooltips = () => {
     if (!canvasRef.current || !tooltipsRef.current) {
       return
     }
     const canvasRect = canvasRef.current.getBoundingClientRect()
-    const context = canvasRef.current.getContext('2d')
+    const context = canvasRef.current.getContext('2d') as TrackedContext
+    if (!context) {
+      return
+    }
     Array.from(tooltipsRef.current.children).forEach((child) => {
       const domChild = child as HTMLElement
-      const tooltipX = domChild.dataset['x']
-      const tooltipY = domChild.dataset['y']
+      const tooltipX = Number(domChild.dataset['x'])
+      const tooltipY = Number(domChild.dataset['y'])
 
       const screenCoords = context.untransformedPoint(tooltipX, tooltipY)
       const relativeX = screenCoords.x / canvasRect.width
@@ -322,7 +335,10 @@ const Map: React.FC<Props> = ({
       return
     }
     logRedraw(reason)
-    const context = canvasRef.current.getContext('2d')
+    const context = canvasRef.current.getContext('2d') as TrackedContext
+    if (!context) {
+      return
+    }
     
     // Clear the entire canvas
     const p1 = context.transformedPoint(0, 0)
@@ -394,7 +410,7 @@ const Map: React.FC<Props> = ({
       }
     }
 
-    const draggingMarker = getMarkerChild(draggingMarkerKey.current)
+    const draggingMarker = getMarkerChild(draggingMarkerKey.current || '')
     markers.current.filter(child => {
       return child !== draggingMarker
     }).map(renderMarkers)
@@ -467,6 +483,9 @@ const Map: React.FC<Props> = ({
       return
     }
     const context = canvasRef.current.getContext('2d')
+    if (!context) {
+      return
+    }
 
     const transform = context.getTransform()
     const maxScale = Math.max(transform.a, transform.d)
@@ -515,6 +534,9 @@ const Map: React.FC<Props> = ({
         return
       }
       const context = canvasRef.current.getContext('2d')
+      if (!context) {
+        return
+      }
       const imgWidth = mapImage.current.width
       const imgHeight = mapImage.current.height
       if (imgWidth && imgHeight) {
@@ -598,7 +620,7 @@ const Map: React.FC<Props> = ({
         return
       }
   
-      let clickedMarker: React.ReactElement = null
+      let clickedMarker: React.ReactElement | undefined = undefined
       if (draggingMarkerKey.current) {
         clickedMarker = getMarkerChild(draggingMarkerKey.current)
       }
@@ -652,6 +674,9 @@ const Map: React.FC<Props> = ({
         return
       }
       const context = canvasRef.current.getContext('2d')
+      if (!context) {
+        return
+      }
       
       const lastPt = getCursorCoords()
       const rect = canvasRef.current.getBoundingClientRect()
@@ -670,7 +695,7 @@ const Map: React.FC<Props> = ({
       }
   
       if (draggingMarkerKey.current) {
-        if (new Date() > clickTime.current + minDragTime) {
+        if (typeof clickTime.current === 'number' && +(new Date()) > clickTime.current + minDragTime) {
           dragTick(draggingMarkerKey.current)
         }
       } else {
@@ -731,7 +756,8 @@ const Map: React.FC<Props> = ({
       if (
         draggingMarkerKey.current &&
         dragged.current &&
-        new Date() > clickTime.current + minDragTime
+        typeof clickTime.current === 'number' &&
+        +(new Date()) > clickTime.current + minDragTime
       ) {
         dragEnd(draggingMarkerKey.current)
       }
@@ -742,12 +768,13 @@ const Map: React.FC<Props> = ({
     }
   }, [minDragTime])
   useEffect(() => {
-    if (!canvasRef.current) {
+    const canvas = canvasRef.current
+    if (!canvas) {
       return
     }
-    canvasRef.current.addEventListener('mouseup', handleCanvasMouseUp)
+    canvas.addEventListener('mouseup', handleCanvasMouseUp)
     return () => {
-      canvasRef.current.removeEventListener('mouseup', handleCanvasMouseUp)
+      canvas.removeEventListener('mouseup', handleCanvasMouseUp)
     }
   }, [handleDocumentMouseUp])
 
@@ -765,12 +792,13 @@ const Map: React.FC<Props> = ({
     }
   }, [minDragTime, handleDocumentMouseMove])
   useEffect(() => {
-    if (!canvasRef.current) {
+    const canvas = canvasRef.current
+    if (!canvas) {
       return
     }
-    canvasRef.current.addEventListener('mousedown', handleCanvasMouseDown, false)
+    canvas.addEventListener('mousedown', handleCanvasMouseDown, false)
     return () => {
-      canvasRef.current.removeEventListener('mousedown', handleCanvasMouseDown, false)
+      canvas.removeEventListener('mousedown', handleCanvasMouseDown, false)
     }
   }, [handleCanvasMouseDown])
 
@@ -794,6 +822,9 @@ const Map: React.FC<Props> = ({
         return
       }
       const context = canvasRef.current.getContext('2d')
+      if (!context) {
+        return
+      }
   
       const pt = getCursorCoords()
       if (pt === null) {
@@ -831,22 +862,25 @@ const Map: React.FC<Props> = ({
     }
   }, [zoom])
   useEffect(() => {
-    if (!canvasRef.current) {
+    const canvas = canvasRef.current
+    if (!canvas) {
       return
     }
-    canvasRef.current.addEventListener('DOMMouseScroll', handleScroll, false)
-    canvasRef.current.addEventListener('mousewheel', handleScroll, false)
+    canvas.addEventListener('DOMMouseScroll', handleScroll, false)
+    canvas.addEventListener('mousewheel', handleScroll, false)
     return () => {
-      canvasRef.current.removeEventListener('DOMMouseScroll', handleScroll, false)
-      canvasRef.current.removeEventListener('mousewheel', handleScroll, false)
+      canvas.removeEventListener('DOMMouseScroll', handleScroll, false)
+      canvas.removeEventListener('mousewheel', handleScroll, false)
     }
   }, [handleScroll])
 
   const handleDocumentKeyDown = (event) => {
     if (event.which === KEYDOWN_ESCAPE) {
-      const draggingMarker = getMarkerChild(draggingMarkerKey.current)
-      if (draggingMarker && typeof draggingMarker.props.onDragCancel === 'function') {
-        draggingMarker.props.onDragCancel()
+      if (typeof draggingMarkerKey.current === 'string') {
+        const draggingMarker = getMarkerChild(draggingMarkerKey.current)
+        if (draggingMarker && typeof draggingMarker.props.onDragCancel === 'function') {
+          draggingMarker.props.onDragCancel()
+        }
       }
       clickPoint.current = null
       dragged.current = false
@@ -871,23 +905,28 @@ const Map: React.FC<Props> = ({
     }
   }
   useEffect(() => {
-    if (!canvasRef.current) {
+    const canvas = canvasRef.current
+    if (!canvas) {
       return
     }
-    canvasRef.current.addEventListener('dragover', handleDragOver, false)
+    canvas.addEventListener('dragover', handleDragOver, false)
     return () => {
-      canvasRef.current.removeEventListener('dragover', handleDragOver, false)
+      canvas.removeEventListener('dragover', handleDragOver, false)
     }
   }, [])
   
   const handleDoubleClick = useMemo(() => {
     return () => {
-      if (!canvasRef.current) {
+      const canvas = canvasRef.current
+      if (!canvas) {
         return
       }
-      const context = canvasRef.current.getContext('2d')
-  
-      let clickedMarker: React.ReactElement = null
+      const context = canvas.getContext('2d') as TrackedContext
+      if (!context) {
+        return
+      }
+      
+      let clickedMarker: React.ReactElement | undefined = undefined
       if (draggingMarkerKey.current) {
         clickedMarker = getMarkerChild(draggingMarkerKey.current)
       } else {
@@ -901,7 +940,7 @@ const Map: React.FC<Props> = ({
           clickedMarker.props.onDoubleClick()
         }
       } else {
-        if (typeof onDoubleClick === 'function') {
+        if (typeof onDoubleClick === 'function' && typeof cursorX.current == 'number' && typeof cursorY.current === 'number') {
           const pt = context.transformedPoint(cursorX.current, cursorY.current)
           onDoubleClick(pt)
         }
@@ -909,12 +948,13 @@ const Map: React.FC<Props> = ({
     }
   }, [onDoubleClick])
   useEffect(() => {
-    if (!canvasRef.current) {
+    const canvas = canvasRef.current
+    if (!canvas) {
       return
     }
-    canvasRef.current.addEventListener('dblclick', handleDoubleClick)
+    canvas.addEventListener('dblclick', handleDoubleClick)
     return () => {
-      canvasRef.current.removeEventListener('dblclick', handleDoubleClick)
+      canvas.removeEventListener('dblclick', handleDoubleClick)
     }
   }, [handleDoubleClick])
 
@@ -948,6 +988,9 @@ const Map: React.FC<Props> = ({
     }
     const rect = canvasRef.current.getBoundingClientRect()
     const context = canvasRef.current.getContext('2d')
+    if (!context) {
+      return
+    }
     const transform = context.getTransform()
 
     if (!animationStart.current) {

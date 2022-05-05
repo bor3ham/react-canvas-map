@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { Coords } from './types'
+import type { Coords } from './types'
 
 type Props = {
   markerKey: string
