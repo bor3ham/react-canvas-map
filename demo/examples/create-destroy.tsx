@@ -1,12 +1,17 @@
 import React, { useState } from 'react'
 import ReactDOM from 'react-dom'
 import { Map, Marker } from 'react-canvas-map'
+import type { Coords } from 'react-canvas-map'
 
 const markerImage = new Image()
 markerImage.src = '../static/marker-blue.svg'
 
-function CreateDestroyExample() {
-  const [markers, setMarkers] = useState([])
+interface MarkerData extends Coords {
+  key: string
+}
+
+const CreateDestroyExample = () => {
+  const [markers, setMarkers] = useState(new Array<MarkerData>())
   return (
     <>
       <p>Click map to create markers. Click the markers to destroy them.</p>
@@ -14,7 +19,13 @@ function CreateDestroyExample() {
         <Map
           image="../static/map.jpg"
           onClick={(coords) => {
-            setMarkers(prevMarkers => [...prevMarkers, coords])
+            setMarkers(prevMarkers => [
+              ...prevMarkers,
+              {
+                key: `marker-${prevMarkers.length + 1}`,
+                coords,
+              }
+            ])
           }}
         >
           {markers.map((marker, markerIndex) => {
@@ -25,8 +36,8 @@ function CreateDestroyExample() {
             }
             return (
               <Marker
-                key={`marker-${markerIndex}`}
-                markerKey={`marker-${markerIndex}`}
+                key={marker.key}
+                markerKey={marker.key}
                 coords={marker}
                 image={markerImage}
                 onClick={destroyMarker}

@@ -1,16 +1,21 @@
 import React, { useState } from 'react'
 import ReactDOM from 'react-dom'
 import { Map, Marker, Tooltip } from 'react-canvas-map'
+import type { Coords } from 'react-canvas-map'
 
 const markerImage = new Image()
 markerImage.src = `../static/marker-blue.svg`
 
-function TooltipsExample() {
+interface MarkerData extends Coords {
+  key: string
+}
+
+const TooltipsExample = () => {
   const [markers] = useState([
-    {x: 100, y: 200},
-    {x: 200, y: 500},
+    {x: 100, y: 200, key: 'marker-1'} as MarkerData,
+    {x: 200, y: 500, key: 'marker-2'} as MarkerData,
   ])
-  const [activeMarker, setActiveMarker] = useState(null)
+  const [activeMarker, setActiveMarker] = useState<string | null>(null)
   return (
     <>
       <p>Click on a marker to open the tooltip.</p>
@@ -19,18 +24,17 @@ function TooltipsExample() {
           image="../static/map.jpg"
           onClick={() => {setActiveMarker(null)}}
         >
-          {markers.map((marker, markerIndex) => {
-            const active = markerIndex === activeMarker
+          {markers.map((marker) => {
+            const active = marker.key === activeMarker
             return (
-              <React.Fragment key={`marker-${markerIndex}`}>
+              <React.Fragment key={marker.key}>
                 <Marker
-                  markerKey={`marker-${markerIndex}`}
+                  markerKey={marker.key}
                   coords={marker}
                   image={markerImage}
                   onClick={() => {
-                    setActiveMarker(markerIndex)
+                    setActiveMarker(marker.key)
                   }}
-                  markerIndex={markerIndex}
                 />
                 {active && (
                   <Tooltip coords={marker}>

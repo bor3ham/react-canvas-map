@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom'
 import { Map, Marker } from 'react-canvas-map'
+import type { Coords } from 'react-canvas-map'
 import { Checkbox, Button } from 'mireco/inputs'
 
 const markerImage = new Image()
@@ -11,9 +12,7 @@ const MARKERS_INTERVAL_MS = 100
 const PAN_INTERVAL_SECONDS = 2
 
 function randomRange(min, max) {
-  min = Math.ceil(min)
-  max = Math.floor(max)
-  return Math.floor(Math.random() * (max - min + 1)) + min
+  return Math.floor(Math.random() * (Math.floor(max) - Math.ceil(min) + 1)) + Math.ceil(min)
 }
 
 function randomMap() {
@@ -27,10 +26,10 @@ function randomPoint() {
   return {
     x: randomRange(0, 400),
     y: randomRange(0, 400),
-  }
+  } as Coords
 }
 
-function StressTest() {
+const StressTest = () => {
   const [mapImage, setMapImage] = useState(randomMap())
   const randomiseImage = () => {
     setMapImage(randomMap())
@@ -140,9 +139,9 @@ function StressTest() {
                   image={markerImage}
                   size={10}
                   onDoubleClick={() => {
-                    setMarkers((prevMarkers) => (prevMarkers.filter((_, oldMarkerIndex) => {
-                      return oldMarkerIndex != markerIndex
-                    })))
+                    setMarkers((prevMarkers) => (prevMarkers.filter((_, oldMarkerIndex) => (
+                      oldMarkerIndex !== markerIndex
+                    ))))
                   }}
                 />
               )

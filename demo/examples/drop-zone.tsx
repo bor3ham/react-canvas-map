@@ -1,13 +1,23 @@
 import React, { useState } from 'react'
 import ReactDOM from 'react-dom'
 import { Map, Marker, DropZone } from 'react-canvas-map'
+import type { Coords } from 'react-canvas-map'
 
 const markerImage = new Image()
 markerImage.src = `../static/marker-blue.svg`
 
-function DropZoneExample() {
-  const [markers, setMarkers] = useState([])
-  const [dragState, setDragState] = useState(null)
+interface MarkerData extends Coords {
+  key: string
+}
+
+interface DragState {
+  marker: string
+  coords: Coords
+}
+
+const DropZoneExample = () => {
+  const [markers, setMarkers] = useState(new Array<MarkerData>())
+  const [dragState, setDragState] = useState<DragState | null>(null)
   const destroyMarker = (index) => {
     const newMarkers = [...markers]
     newMarkers.splice(index, 1)
@@ -20,37 +30,41 @@ function DropZoneExample() {
         <Map
           image="../static/map.jpg"
           onClick={(coords) => {
-            setMarkers((prevMarkers) => {
-              return [...prevMarkers, coords]
-            })
+            setMarkers((prevMarkers) => [
+              ...prevMarkers,
+              {
+                key: `marker-${prevMarkers.length + 1}`,
+                coords,
+              },
+            ])
           }}
         >
           {markers.map((marker, markerIndex) => {
             let coords = marker
-            if (dragState !== null && dragState.markerIndex === markerIndex) {
+            if (dragState !== null && dragState.marker === marker.key) {
               coords = dragState.coords
             }
             return (
               <Marker
-                key={`marker-${markerIndex}`}
-                markerKey={`marker-${markerIndex}`}
+                key={marker.key}
+                markerKey={marker.key}
                 coords={coords}
                 image={markerImage}
-                onDragTick={(coords) => {
+                onDragTick={(dragCoords) => {
                   setDragState({
-                    markerIndex,
-                    coords,
+                    marker: marker.key,
+                    coords: dragCoords,
                   })
                 }}
-                onDragEnd={(coords) => {
-                  setMarkers((prevMarkers) => {
-                    return prevMarkers.map((oldMarker, oldMarkerIndex) => {
+                onDragEnd={(dragCoords) => {
+                  setMarkers((prevMarkers) => (
+                    prevMarkers.map((oldMarker, oldMarkerIndex) => {
                       if (oldMarkerIndex === markerIndex) {
-                        return coords
+                        return dragCoords
                       }
                       return oldMarker
                     })
-                  })
+                  ))
                   setDragState(null)
                 }}
                 markerIndex={markerIndex}
