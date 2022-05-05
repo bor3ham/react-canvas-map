@@ -12,18 +12,16 @@ export type { TrackedContext }
 function trackTransforms(ctx) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
   let xform = svg.createSVGMatrix()
-  ctx.getTransform = () => {
-    return xform
-  }
+  ctx.getTransform = () => xform
 
-  let savedTransforms: DOMMatrix[] = []
-  const save = ctx.save
+  const savedTransforms: DOMMatrix[] = []
+  const { save } = ctx
   ctx.save = () => {
     savedTransforms.push(xform.translate(0, 0))
     return save.call(ctx)
   }
 
-  const restore = ctx.restore
+  const { restore } = ctx
   ctx.restore = () => {
     if (savedTransforms.length > 0) {
       xform = savedTransforms.pop()!
@@ -31,25 +29,25 @@ function trackTransforms(ctx) {
     return restore.call(ctx)
   }
 
-  const scale = ctx.scale
+  const { scale } = ctx
   ctx.scale = (sx, sy) => {
     xform = xform.scaleNonUniform(sx, sy)
     return scale.call(ctx, sx, sy)
   }
 
-  const rotate = ctx.rotate
+  const { rotate } = ctx
   ctx.rotate = (radians) => {
     xform = xform.rotate(radians * 180 / Math.PI)
     return rotate.call(ctx, radians)
   }
 
-  const translate = ctx.translate
+  const { translate } = ctx
   ctx.translate = (dx, dy) => {
     xform = xform.translate(dx, dy)
     return translate.call(ctx, dx, dy)
   }
 
-  const transform = ctx.transform
+  const { transform } = ctx
   ctx.transform = (a, b, c, d, e, f) => {
     const m2 = svg.createSVGMatrix()
     m2.a = a
@@ -62,7 +60,7 @@ function trackTransforms(ctx) {
     return transform.call(ctx, a, b, c, d, e, f)
   }
 
-  const setTransform = ctx.setTransform
+  const { setTransform } = ctx
   ctx.setTransform = (a, b, c, d, e, f) => {
     xform.a = a
     xform.b = b

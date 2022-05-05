@@ -1,8 +1,0 @@
-{
-    "extends": "@uptick/eslint-config",
-    "settings": {
-        "react": {
-            "version": "detect"
-        }
-    }
-}

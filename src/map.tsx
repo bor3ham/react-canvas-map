@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo, useEffect } from 'react'
+import React, { useRef, useState, useMemo, useCallback, useEffect } from 'react'
 
 import { trackTransforms } from './track-transforms'
 import type { TrackedContext } from './track-transforms'
@@ -24,7 +24,7 @@ type Props = {
   minDragTime: number
   clickGraceTime: number
 
-  containInitialImage: boolean // begin with zoom/translation that contains intial image
+  containInitialImage: boolean // begin with zoom/translation that contains initial image
   containUpdatedImage: boolean // update zoom/translation to contain a change of image
   allowContainmentZoom: boolean // allow zooming beyond min/max if image is not contained
 
@@ -80,8 +80,8 @@ const Map: React.FC<Props> = ({
   const animationCoords = useRef<Coords | null>(null)
   const animationLastTimestamp = useRef(+(new Date()))
 
-  const markers = useRef<React.ReactElement[]>(new Array())
-  const dropZones = useRef<React.ReactElement[]>(new Array())
+  const markers = useRef<React.ReactElement[]>([])
+  const dropZones = useRef<React.ReactElement[]>([])
   const flatChildren = useMemo(() => {
     const allChildren: React.ReactElement[] = []
     const getChildren = (child) => {
@@ -98,22 +98,20 @@ const Map: React.FC<Props> = ({
     getChildren(children)
     return allChildren
   }, [children])
-  markers.current = flatChildren.filter(child => {
-    return child.type && child.type === Marker
-  })
-  const getMarkerChild = (key: string) : React.ReactElement | undefined => {
-    return markers.current.find(child => {
-      return child && child.props.markerKey === key
-    })
-  }
-  dropZones.current = flatChildren.filter(child => {
-    return child.type && child.type === DropZone
-  })
-  const tooltipChildren = useMemo(() => {
-    return flatChildren.filter(child => {
-      return child.type && child.type === Tooltip
-    })
-  }, [flatChildren])
+  markers.current = flatChildren.filter(child => (child.type && child.type === Marker))
+  const getMarkerChild = (key: string) : React.ReactElement | undefined => (
+    markers.current.find(child => (
+      child && child.props.markerKey === key
+    ))
+  )
+  dropZones.current = flatChildren.filter(child => (
+    child.type && child.type === DropZone
+  ))
+  const tooltipChildren = useMemo(() => (
+    flatChildren.filter(child => (
+      child.type && child.type === Tooltip
+    ))
+  ), [flatChildren])
 
   const getCursorCoords = () => {
     if (!canvasRef.current) {
@@ -124,8 +122,8 @@ const Map: React.FC<Props> = ({
       return null
     }
     if (
-      typeof cursorX.current !== 'number' || isNaN(cursorX.current) ||
-      typeof cursorY.current !== 'number' || isNaN(cursorY.current)
+      typeof cursorX.current !== 'number' || Number.isNaN(cursorX.current) ||
+      typeof cursorY.current !== 'number' || Number.isNaN(cursorY.current)
     ) {
       return null
     }
@@ -172,14 +170,14 @@ const Map: React.FC<Props> = ({
     bottomRight = context.transformedPoint(bottomRight.x, bottomRight.y)
     return {topLeft, bottomRight, valid: true} as ScreenPositionCoords
   }
-  const getDropZoneTouchingCursor = () : React.ReactElement | undefined => {
+  const getDropZoneTouchingCursor = useCallback(() : React.ReactElement | undefined => {
     const pt = getCursorCoords()
     if (pt === null) {
       return undefined
     }
     // go through dropzones and see if it has landed in any
-    let droppedZone: React.ReactElement | undefined = undefined
-    dropZones.current.map(dropZone => {
+    let droppedZone: React.ReactElement | undefined
+    dropZones.current.forEach(dropZone => {
       const {
         right,
         left,
@@ -209,8 +207,8 @@ const Map: React.FC<Props> = ({
       }
     })
     return droppedZone
-  }
-  const getMarkerTouchingCursor = () => {
+  }, [])
+  const getMarkerTouchingCursor = useCallback(() => {
     if (!canvasRef.current) {
       return null
     }
@@ -234,16 +232,16 @@ const Map: React.FC<Props> = ({
         size = 100,
         scaleWithZoom = true,
 
-        onClick,
-        onDoubleClick,
+        onClick: onMarkerClick,
+        onDoubleClick: onMarkerDoubleClick,
   
         dragZoneScale = 1,
         onDragTick,
         onDragEnd,
       } = child.props
       if (!(
-        typeof onClick === 'function' ||
-        typeof onDoubleClick === 'function' ||
+        typeof onMarkerClick === 'function' ||
+        typeof onMarkerDoubleClick === 'function' ||
         typeof onDragTick === 'function' ||
         typeof onDragEnd === 'function'
       )) {
@@ -255,8 +253,8 @@ const Map: React.FC<Props> = ({
       let distSq
       if (scaleWithZoom) {
         distSq = (
-          Math.pow(coords.x - cursorPt.x, 2) +
-          Math.pow(coords.y - cursorPt.y, 2)
+          ((coords.x - cursorPt.x) ** 2) +
+          ((coords.y - cursorPt.y) ** 2)
         )
       } else {
         const beaconScreenPt = context.untransformedPoint(
@@ -264,8 +262,8 @@ const Map: React.FC<Props> = ({
           coords.y
         )
         distSq = (
-          Math.pow(beaconScreenPt.x - cursorX.current!, 2) +
-          Math.pow(beaconScreenPt.y - cursorY.current!, 2)
+          ((beaconScreenPt.x - cursorX.current!) ** 2) +
+          ((beaconScreenPt.y - cursorY.current!) ** 2)
         )
       }
 
@@ -275,7 +273,7 @@ const Map: React.FC<Props> = ({
     })
     let closestDist = -1
     let closest: string[] = []
-    for (const key in close) {
+    Object.keys(close).forEach(key => {
       const distSq = close[key]
       if (closestDist === -1 || distSq < closestDist) {
         closestDist = distSq
@@ -284,10 +282,10 @@ const Map: React.FC<Props> = ({
       } else if (distSq === closestDist) {
         closest.push(key)
       }
-    }
+    })
     return closest[0] || null
-  }
-  const updateCursor = () => {
+  }, [])
+  const updateCursor = useCallback(() => {
     if (!canvasRef.current) {
       return
     }
@@ -297,7 +295,7 @@ const Map: React.FC<Props> = ({
     } else {
       canvasRef.current.style.cursor = 'auto'
     }
-  }
+  }, [getMarkerTouchingCursor])
 
   const tooltipsRef = useRef<HTMLDivElement>(null)
   const updateTooltips = () => {
@@ -330,7 +328,7 @@ const Map: React.FC<Props> = ({
     lastRedraw.current = nowMs
     console.log(`redrawing for ${reason} after ${idleMs}`)
   }
-  const redraw = (reason) => {
+  const redraw = useCallback((reason) => {
     if (!canvasRef.current) {
       return
     }
@@ -359,23 +357,23 @@ const Map: React.FC<Props> = ({
       const {
         coords,
 
-        image,
+        image: markerImage,
         inCircle = false,
         circleColour = '#337ab7',
         size = 100,
         scaleWithZoom = true,
       } = child.props
 
-      if (!image) {
+      if (!markerImage) {
         return
       }
 
       let coverWidthScale = 1
       let coverHeightScale = 1
-      if (image.width > image.height) {
-        coverHeightScale = image.height / image.width
+      if (markerImage.width > markerImage.height) {
+        coverHeightScale = markerImage.height / markerImage.width
       } else {
-        coverWidthScale = image.width / image.height
+        coverWidthScale = markerImage.width / markerImage.height
       }
 
       const scaledSize = scaleWithZoom ? size : size / scale
@@ -391,7 +389,7 @@ const Map: React.FC<Props> = ({
         context.fillStyle = circleColour
         context.fill()
         context.drawImage(
-          image,
+          markerImage,
           centreX - (renderWidth / 2),
           centreY - (renderHeight / 2),
           renderWidth,
@@ -401,7 +399,7 @@ const Map: React.FC<Props> = ({
         const renderWidth = scaledSize * coverWidthScale
         const renderHeight = scaledSize * coverHeightScale
         context.drawImage(
-          image,
+          markerImage,
           centreX - (renderWidth / 2),
           centreY - (renderHeight / 2),
           renderWidth,
@@ -411,9 +409,9 @@ const Map: React.FC<Props> = ({
     }
 
     const draggingMarker = getMarkerChild(draggingMarkerKey.current || '')
-    markers.current.filter(child => {
-      return child !== draggingMarker
-    }).map(renderMarkers)
+    markers.current.filter(child => (
+      child !== draggingMarker
+    )).map(renderMarkers)
     if (draggingMarker && dragged.current) {
       const hoverDropZone = getDropZoneTouchingCursor()
       const renderDropZones = (child) => {
@@ -429,7 +427,7 @@ const Map: React.FC<Props> = ({
           colour = '#fff',
           backgroundColour = '#0f0',
           fontSize = 24,
-          image,
+          image: dropZoneImage,
         } = child.props
         const {topLeft, bottomRight, valid} = getScreenPositionCoords({
           right,
@@ -447,9 +445,9 @@ const Map: React.FC<Props> = ({
         context.beginPath()
         context.fillStyle = backgroundColour
         context.fillRect(topLeft!.x, topLeft!.y, bottomRight!.x - topLeft!.x, bottomRight!.y - topLeft!.y)
-        if (image) {
+        if (dropZoneImage) {
           context.drawImage(
-            image,
+            dropZoneImage,
             topLeft!.x,
             topLeft!.y,
             bottomRight!.x - topLeft!.x,
@@ -468,17 +466,17 @@ const Map: React.FC<Props> = ({
       }
       dropZones.current.map(renderDropZones)
     }
-    markers.current.filter(child => {
-      return child === draggingMarker
-    }).map(renderMarkers)
+    markers.current.filter(child => (
+      child === draggingMarker
+    )).map(renderMarkers)
     updateTooltips()
     updateCursor()
-  }
+  }, [getDropZoneTouchingCursor, updateCursor])
   useEffect(() => {
     redraw('new children')
-  }, [flatChildren])
+  }, [flatChildren, redraw])
 
-  const resetView = () => {
+  const resetView = useCallback(() => {
     if (!canvasRef.current) {
       return
     }
@@ -491,7 +489,7 @@ const Map: React.FC<Props> = ({
     const maxScale = Math.max(transform.a, transform.d)
     context.setTransform(maxScale, 0, 0, maxScale, transform.e, transform.f)
     redraw('view reset')
-  }
+  }, [redraw])
   
   // scale at which the provided image totally covers the canvas
   const [containmentScale, setContainmentScale] = useState(1)
@@ -528,8 +526,8 @@ const Map: React.FC<Props> = ({
     }
   }
   const [imageInitialised, setImageInitialised] = useState(false)
-  const handleImageLoad = useMemo(() => {
-    return () => {
+  const handleImageLoad = useMemo(() => (
+    () => {
       if (!canvasRef.current || !mapImage.current) {
         return
       }
@@ -546,12 +544,12 @@ const Map: React.FC<Props> = ({
         )
         const widthScaledHeight = (imgHeight / imgWidth) * canvasRef.current.width
         const heightScaledWidth = (imgWidth / imgHeight) * canvasRef.current.height
-        let containmentScale = 1
+        let newContainmentScale = 1
         if (widthScaledHeight > canvasRef.current.height) {
-          containmentScale = canvasRef.current.height / imgHeight
+          newContainmentScale = canvasRef.current.height / imgHeight
           if (containing) {
             let transform = context.getTransform()
-            let scaleAdjust = containmentScale / transform.d
+            const scaleAdjust = newContainmentScale / transform.d
             context.scale(scaleAdjust, scaleAdjust)
             transform = context.getTransform()
             context.translate(
@@ -561,7 +559,7 @@ const Map: React.FC<Props> = ({
           }
         }
         else {
-          containmentScale = canvasRef.current.width / imgWidth
+          newContainmentScale = canvasRef.current.width / imgWidth
           if (containing) {
             let transform = context.getTransform()
             const scaleAdjust =  containmentScale / transform.a
@@ -580,10 +578,10 @@ const Map: React.FC<Props> = ({
         }
       }
     }
-  }, [imageInitialised])
+  ), [imageInitialised, containInitialImage, containUpdatedImage, redraw, containmentScale])
 
-  const resize = useMemo(() => {
-    return () => {
+  const resize = useMemo(() => (
+    () => {
       if (!canvasRef.current) {
         return
       }
@@ -605,7 +603,7 @@ const Map: React.FC<Props> = ({
       updateContainmentScale()
       resetView()
     }
-  }, [resetView])
+  ), [resetView])
   useEffect(() => {
     window.addEventListener('resize', resize)
     return () => {
@@ -613,44 +611,40 @@ const Map: React.FC<Props> = ({
     }
   }, [resize])
 
-  const handleClick = useMemo(() => {
-    return () => {
-      const pt = getCursorCoords()
-      if (pt === null) {
-        return
-      }
-  
-      let clickedMarker: React.ReactElement | undefined = undefined
-      if (draggingMarkerKey.current) {
-        clickedMarker = getMarkerChild(draggingMarkerKey.current)
-      }
-      if (clickedMarker) {
-        if (typeof clickedMarker.props.onClick === 'function') {
-          clickedMarker.props.onClick()
-        }
-      } else {
-        if (typeof onClick === 'function') {
-          onClick(pt)
-        }
-      }
-    }
-  }, [onClick])
-  const dragTick = (draggingMarkerKey) => {
+  const handleClick = useCallback(() => {
     const pt = getCursorCoords()
     if (pt === null) {
       return
     }
-    const draggingMarker = getMarkerChild(draggingMarkerKey)
+
+    let clickedMarker: React.ReactElement | undefined
+    if (draggingMarkerKey.current) {
+      clickedMarker = getMarkerChild(draggingMarkerKey.current)
+    }
+    if (clickedMarker) {
+      if (typeof clickedMarker.props.onClick === 'function') {
+        clickedMarker.props.onClick()
+      }
+    } else if (typeof onClick === 'function') {
+      onClick(pt)
+    }
+  }, [onClick])
+  const dragTick = useCallback((markerKey) => {
+    const pt = getCursorCoords()
+    if (pt === null) {
+      return
+    }
+    const draggingMarker = getMarkerChild(markerKey)
     if (draggingMarker && typeof draggingMarker.props.onDragTick === 'function') {
       draggingMarker.props.onDragTick(pt)
     }
-  }
-  const dragEnd = (draggingMarkerKey) => {
+  }, [])
+  const dragEnd = useCallback((markerKey) => {
     const pt = getCursorCoords()
     if (pt === null) {
       return
     }
-    const draggedMarker = getMarkerChild(draggingMarkerKey)
+    const draggedMarker = getMarkerChild(markerKey)
     if (!draggedMarker) {
       return
     }
@@ -666,10 +660,10 @@ const Map: React.FC<Props> = ({
     } else if (typeof draggedMarker.props.onDragEnd === 'function') {
       draggedMarker.props.onDragEnd(pt)
     }
-  }
+  }, [getDropZoneTouchingCursor])
 
-  const handleDocumentMouseMove = useMemo(() => {
-    return (event) => {
+  const handleDocumentMouseMove = useMemo(() => (
+    (event) => {
       if (!canvasRef.current) {
         return
       }
@@ -740,7 +734,7 @@ const Map: React.FC<Props> = ({
         redraw('pan')
       }
     }
-  }, [clickGraceTime, minDragTime, overpan])
+  ), [clickGraceTime, minDragTime, overpan, dragTick, redraw, updateCursor])
   useEffect(() => {
     document.addEventListener('mousemove', handleDocumentMouseMove, false)
     return () => {
@@ -748,8 +742,8 @@ const Map: React.FC<Props> = ({
     }
   }, [handleDocumentMouseMove])
 
-  const handleDocumentMouseUp = useMemo(() => {
-    return () => {
+  const handleDocumentMouseUp = useMemo(() => (
+    () => {
       if (dragTimeout.current) {
         window.clearTimeout(dragTimeout.current)
       }
@@ -766,58 +760,56 @@ const Map: React.FC<Props> = ({
       dragged.current = false
       redraw('mouse up')
     }
-  }, [minDragTime])
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) {
-      return
-    }
-    canvas.addEventListener('mouseup', handleCanvasMouseUp)
-    return () => {
-      canvas.removeEventListener('mouseup', handleCanvasMouseUp)
-    }
-  }, [handleDocumentMouseUp])
-
-  const handleCanvasMouseDown = useMemo(() => {
-    return () => {
-      animationCancel.current = true
-  
-      // @ts-ignore: Old vendor prefixes
-      document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = 'none'
-      clickPoint.current = getCursorCoords()
-      dragTimeout.current = window.setTimeout(handleDocumentMouseMove, minDragTime)
-      clickTime.current = +(new Date())
-      dragged.current = false
-      draggingMarkerKey.current = getMarkerTouchingCursor()
-    }
-  }, [minDragTime, handleDocumentMouseMove])
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) {
-      return
-    }
-    canvas.addEventListener('mousedown', handleCanvasMouseDown, false)
-    return () => {
-      canvas.removeEventListener('mousedown', handleCanvasMouseDown, false)
-    }
-  }, [handleCanvasMouseDown])
-
-  const handleCanvasMouseUp = useMemo(() => {
-    return () => {
-      if (!dragged.current) {
-        handleClick()
-      }
-    }
-  }, [handleClick])
+  ), [minDragTime, dragEnd, redraw])
   useEffect(() => {
     document.addEventListener('mouseup', handleDocumentMouseUp, false)
     return () => {
       document.removeEventListener('mouseup', handleDocumentMouseUp, false)
     }
   }, [handleDocumentMouseUp])
+  
+  const handleCanvasMouseDown = useCallback(() => {
+    animationCancel.current = true
+    
+    // @ts-ignore: Old vendor prefixes
+    document.body.style.mozUserSelect = 'none'
+    document.body.style.webkitUserSelect = 'none'
+    document.body.style.userSelect = 'none'
+    clickPoint.current = getCursorCoords()
+    dragTimeout.current = window.setTimeout(handleDocumentMouseMove, minDragTime)
+    clickTime.current = +(new Date())
+    dragged.current = false
+    draggingMarkerKey.current = getMarkerTouchingCursor()
+  }, [minDragTime, handleDocumentMouseMove, getMarkerTouchingCursor])
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) {
+      return () => {}
+    }
+    canvas.addEventListener('mousedown', handleCanvasMouseDown, false)
+    return () => {
+      canvas.removeEventListener('mousedown', handleCanvasMouseDown, false)
+    }
+  }, [handleCanvasMouseDown])
+  
+  const handleCanvasMouseUp = useCallback(() => {
+    if (!dragged.current) {
+      handleClick()
+    }
+  }, [handleClick])
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) {
+      return () => {}
+    }
+    canvas.addEventListener('mouseup', handleCanvasMouseUp)
+    return () => {
+      canvas.removeEventListener('mouseup', handleCanvasMouseUp)
+    }
+  }, [handleCanvasMouseUp])
 
-  const zoom = useMemo(() => {
-    return (clicks) => {
+  const zoom = useMemo(() => (
+    (clicks) => {
       if (!canvasRef.current) {
         return
       }
@@ -831,7 +823,7 @@ const Map: React.FC<Props> = ({
         return
       }
       context.translate(pt.x, pt.y)
-      let factor = Math.pow(SCALE_FACTOR, clicks)
+      let factor = SCALE_FACTOR ** clicks
       // limit zoom to given ranges in props
       const transform = context.getTransform()
       if (factor > 1) {
@@ -849,22 +841,29 @@ const Map: React.FC<Props> = ({
       context.translate(-pt.x, -pt.y)
       redraw('zoom')
     }
-  }, [maxImageZoom, minImageZoom])
-  const handleScroll = useMemo(() => {
-    return (event) => {
+  ), [maxImageZoom, minImageZoom, redraw])
+  const handleScroll = useMemo(() => (
+    (event) => {
       animationCancel.current = true
   
-      const delta = event.wheelDelta ? event.wheelDelta / 40 : event.detail ? -event.detail : 0
+      let delta = event.wheelDelta
+      if (delta) {
+        delta /= 40
+      } else if (event.detail) {
+        delta = -event.detail
+      } else {
+        delta = 0
+      }
       if (delta) {
         zoom(delta)
       }
       return event.preventDefault() && false
     }
-  }, [zoom])
+  ), [zoom])
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) {
-      return
+      return () => {}
     }
     canvas.addEventListener('DOMMouseScroll', handleScroll, false)
     canvas.addEventListener('mousewheel', handleScroll, false)
@@ -874,7 +873,7 @@ const Map: React.FC<Props> = ({
     }
   }, [handleScroll])
 
-  const handleDocumentKeyDown = (event) => {
+  const handleDocumentKeyDown = useCallback((event) => {
     if (event.which === KEYDOWN_ESCAPE) {
       if (typeof draggingMarkerKey.current === 'string') {
         const draggingMarker = getMarkerChild(draggingMarkerKey.current)
@@ -886,13 +885,13 @@ const Map: React.FC<Props> = ({
       dragged.current = false
       redraw('mouse down')
     }
-  }
+  }, [redraw])
   useEffect(() => {
     document.addEventListener('keydown', handleDocumentKeyDown, false)
     return () => {
       document.removeEventListener('keydown', handleDocumentKeyDown, false)
     }
-  }, [])
+  }, [handleDocumentKeyDown])
 
   const handleDragOver = (event) => {
     if (!canvasRef.current) {
@@ -907,7 +906,7 @@ const Map: React.FC<Props> = ({
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) {
-      return
+      return () => {}
     }
     canvas.addEventListener('dragover', handleDragOver, false)
     return () => {
@@ -915,42 +914,42 @@ const Map: React.FC<Props> = ({
     }
   }, [])
   
-  const handleDoubleClick = useMemo(() => {
-    return () => {
-      const canvas = canvasRef.current
-      if (!canvas) {
-        return
-      }
-      const context = canvas.getContext('2d') as TrackedContext
-      if (!context) {
-        return
-      }
-      
-      let clickedMarker: React.ReactElement | undefined = undefined
-      if (draggingMarkerKey.current) {
-        clickedMarker = getMarkerChild(draggingMarkerKey.current)
-      } else {
-        const hovered = getMarkerTouchingCursor()
-        if (hovered) {
-          clickedMarker = getMarkerChild(hovered)
-        }
-      }
-      if (clickedMarker) {
-        if (typeof clickedMarker.props.onDoubleClick === 'function') {
-          clickedMarker.props.onDoubleClick()
-        }
-      } else {
-        if (typeof onDoubleClick === 'function' && typeof cursorX.current == 'number' && typeof cursorY.current === 'number') {
-          const pt = context.transformedPoint(cursorX.current, cursorY.current)
-          onDoubleClick(pt)
-        }
-      }
-    }
-  }, [onDoubleClick])
-  useEffect(() => {
+  const handleDoubleClick = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) {
       return
+    }
+    const context = canvas.getContext('2d') as TrackedContext
+    if (!context) {
+      return
+    }
+    
+    let clickedMarker: React.ReactElement | undefined
+    if (draggingMarkerKey.current) {
+      clickedMarker = getMarkerChild(draggingMarkerKey.current)
+    } else {
+      const hovered = getMarkerTouchingCursor()
+      if (hovered) {
+        clickedMarker = getMarkerChild(hovered)
+      }
+    }
+    if (clickedMarker) {
+      if (typeof clickedMarker.props.onDoubleClick === 'function') {
+        clickedMarker.props.onDoubleClick()
+      }
+    } else if (
+      typeof onDoubleClick === 'function' &&
+      typeof cursorX.current === 'number' &&
+      typeof cursorY.current === 'number'
+    ) {
+      const pt = context.transformedPoint(cursorX.current, cursorY.current)
+      onDoubleClick(pt)
+    }
+  }, [onDoubleClick, getMarkerTouchingCursor])
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) {
+      return () => {}
     }
     canvas.addEventListener('dblclick', handleDoubleClick)
     return () => {
@@ -962,7 +961,7 @@ const Map: React.FC<Props> = ({
     mapImage.current = new Image()
     mapImage.current.src = image
     mapImage.current.onload = handleImageLoad
-  }, [image])
+  }, [image, handleImageLoad])
   useEffect(() => {
     if (mapImage.current) {
       mapImage.current.onload = handleImageLoad
@@ -971,9 +970,9 @@ const Map: React.FC<Props> = ({
 
   useEffect(() => {
     resize()
-  }, [])
+  }, [resize])
 
-  const animate = (timestamp) => {
+  const animate = useCallback((timestamp) => {
     if (animationCancel.current) {
       animationStart.current = null
       animationCancel.current = false
@@ -1013,7 +1012,7 @@ const Map: React.FC<Props> = ({
         x: desired.x - current.x,
         y: desired.y - current.y,
       }
-      const dist = Math.sqrt(Math.pow(diff.x, 2) + Math.pow(diff.y, 2))
+      const dist = Math.sqrt((diff.x ** 2) + (diff.y ** 2))
       panDone = dist < 1
       if (!panDone) {
         const delta = Math.min(Math.max(deltaMs * 0.005, 0), 1)
@@ -1030,8 +1029,8 @@ const Map: React.FC<Props> = ({
     if (!panDone) {
       window.requestAnimationFrame(animate)
     }
-  }
-  const animatePanTo = (coords) => {
+  }, [redraw])
+  const animatePanTo = useCallback((coords) => {
     animationCancel.current = false
     animationStart.current = null
     animationCoords.current = coords
@@ -1039,12 +1038,12 @@ const Map: React.FC<Props> = ({
       window.requestAnimationFrame(animate)
     }
     animationActive.current = true
-  }
+  }, [animate])
   useEffect(() => {
     if (panTo) {
       animatePanTo(panTo)
     }
-  }, [panTo])
+  }, [panTo, animatePanTo])
 
   return (
     <div style={{
