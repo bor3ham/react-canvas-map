@@ -37,7 +37,7 @@ type ScreenPositionCoords = {
   valid: boolean
 }
 
-const Map: React.FC<Props> = ({
+const Map = React.forwardRef<HTMLCanvasElement, Props>(({
   image,
   children,
 
@@ -56,7 +56,7 @@ const Map: React.FC<Props> = ({
   allowContainmentZoom = true,
 
   panTo,
-}) => {
+}, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     if (canvasRef.current) {
@@ -1052,12 +1052,23 @@ const Map: React.FC<Props> = ({
       height: '100%',
       overflow: 'hidden',
     }}>
-      <canvas ref={canvasRef} style={{width: '100%', height: '100%'}} />
+      <canvas ref={(node) => {
+        if (!node) {
+          return
+        }
+        (canvasRef as React.MutableRefObject<HTMLCanvasElement>).current = node
+        if (typeof ref === 'function') {
+          ref(node)
+        } else if (ref) {
+          // eslint-disable-next-line no-param-reassign
+          (ref as React.MutableRefObject<HTMLCanvasElement>).current = node
+        }
+      }} style={{width: '100%', height: '100%'}} />
       <div ref={tooltipsRef}>
         {tooltipChildren}
       </div>
     </div>
   )
-}
+})
 
 export { Map }
