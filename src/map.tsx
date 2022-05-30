@@ -73,15 +73,20 @@ const Map = React.forwardRef<HTMLCanvasElement, Props>(({
   const dragTimeout = useRef<number | undefined>(undefined)
   const clickPoint = useRef<DOMPoint | null>(null)
   const clickTime = useRef(+(new Date()))
-  const cursorX = useRef<number | null>(null)
-  const cursorY = useRef<number | null>(null)
+  const cursor = useRef<Coords | null>(null)
   const updateMouseCoords = useCallback(() => {
+    if (!canvasRef.current) {
+      return
+    }
+    const context = canvasRef.current.getContext('2d') as TrackedContext
+    if (!context) {
+      return
+    }
     if (
-      typeof cursorX.current === 'number' &&
-      typeof cursorY.current === 'number' &&
+      cursor.current &&
       typeof onCursorMove === 'function'
     ) {
-      onCursorMove({x: cursorX.current, y: cursorY.current})
+      onCursorMove(context.transformedPoint(cursor.current.x, cursor.current.y))
     }
   }, [onCursorMove])
 
@@ -132,13 +137,10 @@ const Map = React.forwardRef<HTMLCanvasElement, Props>(({
     if (!context) {
       return null
     }
-    if (
-      typeof cursorX.current !== 'number' || Number.isNaN(cursorX.current) ||
-      typeof cursorY.current !== 'number' || Number.isNaN(cursorY.current)
-    ) {
-      return null
+    if (cursor.current) {
+      return context.transformedPoint(cursor.current.x, cursor.current.y)
     }
-    return context.transformedPoint(cursorX.current, cursorY.current)
+    return null
   }
   const getScreenPositionCoords = ({
     right,
@@ -273,8 +275,8 @@ const Map = React.forwardRef<HTMLCanvasElement, Props>(({
           coords.y
         )
         distSq = (
-          ((beaconScreenPt.x - cursorX.current!) ** 2) +
-          ((beaconScreenPt.y - cursorY.current!) ** 2)
+          ((beaconScreenPt.x - cursor.current!.x) ** 2) +
+          ((beaconScreenPt.y - cursor.current!.y) ** 2)
         )
       }
 
@@ -596,13 +598,15 @@ const Map = React.forwardRef<HTMLCanvasElement, Props>(({
       return
     }
   
-    if (cursorX.current !== null && cursorY.current !== null)
+    if (cursor.current !== null)
     {
-      const cursorXProportion = cursorX.current / canvasRef.current.clientWidth
-      const cursorYProportion = cursorY.current / canvasRef.current.clientHeight
+      const cursorXProportion = cursor.current.x / canvasRef.current.clientWidth
+      const cursorYProportion = cursor.current.y / canvasRef.current.clientHeight
   
-      cursorX.current = cursorXProportion * canvasRef.current.width
-      cursorY.current = cursorYProportion * canvasRef.current.height
+      cursor.current = {
+        x: cursorXProportion * canvasRef.current.width,
+        y: cursorYProportion * canvasRef.current.height,
+      }
       updateMouseCoords()
     }
 
@@ -685,8 +689,10 @@ const Map = React.forwardRef<HTMLCanvasElement, Props>(({
       const lastPt = getCursorCoords()
       const rect = canvasRef.current.getBoundingClientRect()
       if (event) {
-        cursorX.current = event.clientX - rect.x
-        cursorY.current = event.clientY - rect.y
+        cursor.current = {
+          x: event.clientX - rect.x,
+          y: event.clientY - rect.y,
+        }
         updateMouseCoords()
       }
       
@@ -910,8 +916,10 @@ const Map = React.forwardRef<HTMLCanvasElement, Props>(({
     }
     const rect = canvasRef.current.getBoundingClientRect()
     if (event) {
-      cursorX.current = event.clientX - rect.x
-      cursorY.current = event.clientY - rect.y
+      cursor.current = {
+        x: event.clientX - rect.x,
+        y: event.clientY - rect.y,
+      }
       updateMouseCoords()
     }
   }, [updateMouseCoords])
@@ -950,11 +958,10 @@ const Map = React.forwardRef<HTMLCanvasElement, Props>(({
         clickedMarker.props.onDoubleClick()
       }
     } else if (
-      typeof onDoubleClick === 'function' &&
-      typeof cursorX.current === 'number' &&
-      typeof cursorY.current === 'number'
+      cursor.current &&
+      typeof onDoubleClick === 'function'
     ) {
-      const pt = context.transformedPoint(cursorX.current, cursorY.current)
+      const pt = context.transformedPoint(cursor.current.x, cursor.current.y)
       onDoubleClick(pt)
     }
   }, [onDoubleClick, getMarkerTouchingCursor])
