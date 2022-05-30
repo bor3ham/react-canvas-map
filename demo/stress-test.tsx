@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { Map, Marker } from 'react-canvas-map'
 import type { Coords } from 'react-canvas-map'
@@ -88,6 +88,10 @@ const StressTest = () => {
     }
   }, [])
 
+  const handleCursorMove = useCallback((coords) => {
+    console.log('cursor moved to', coords)
+  }, [])
+
   return (
     <>
       <Button block onClick={() => {
@@ -128,6 +132,7 @@ const StressTest = () => {
               setMarkers(prevMarkers => ([...prevMarkers, coords]))
             }}
             panTo={panTo}
+            onCursorMove={handleCursorMove}
           >
             {markers.map((marker, markerIndex) => {
               const markerKey = `marker-${markerIndex}`

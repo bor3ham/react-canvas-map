@@ -16,6 +16,7 @@ type Props = {
 
   onClick?(pt: Coords): void
   onDoubleClick?(pt: Coords): void
+  onCursorMove?(pt: Coords): void
 
   minZoom: number
   maxZoom: number
@@ -43,6 +44,7 @@ const Map = React.forwardRef<HTMLCanvasElement, Props>(({
 
   onClick,
   onDoubleClick,
+  onCursorMove,
 
   minZoom = 0.2,
   maxZoom = 5,
@@ -73,6 +75,15 @@ const Map = React.forwardRef<HTMLCanvasElement, Props>(({
   const clickTime = useRef(+(new Date()))
   const cursorX = useRef<number | null>(null)
   const cursorY = useRef<number | null>(null)
+  const updateMouseCoords = useCallback(() => {
+    if (
+      typeof cursorX.current === 'number' &&
+      typeof cursorY.current === 'number' &&
+      typeof onCursorMove === 'function'
+    ) {
+      onCursorMove({x: cursorX.current, y: cursorY.current})
+    }
+  }, [onCursorMove])
 
   const animationActive = useRef(false)
   const animationCancel = useRef(false)
@@ -580,30 +591,29 @@ const Map = React.forwardRef<HTMLCanvasElement, Props>(({
     }
   ), [imageInitialised, containInitialImage, containUpdatedImage, redraw, containmentScale])
 
-  const resize = useMemo(() => (
-    () => {
-      if (!canvasRef.current) {
-        return
-      }
-    
-      if (cursorX.current !== null && cursorY.current !== null)
-      {
-        const cursorXProportion = cursorX.current / canvasRef.current.clientWidth
-        const cursorYProportion = cursorY.current / canvasRef.current.clientHeight
-    
-        cursorX.current = cursorXProportion * canvasRef.current.width
-        cursorY.current = cursorYProportion * canvasRef.current.height
-      }
-  
-      canvasRef.current.width = canvasRef.current.clientWidth
-      canvasRef.current.height = canvasRef.current.clientHeight
-  
-      // reset the transforms
-      // todo: rescale the transforms to match the new size instead
-      updateContainmentScale()
-      resetView()
+  const resize = useCallback(() => {
+    if (!canvasRef.current) {
+      return
     }
-  ), [resetView])
+  
+    if (cursorX.current !== null && cursorY.current !== null)
+    {
+      const cursorXProportion = cursorX.current / canvasRef.current.clientWidth
+      const cursorYProportion = cursorY.current / canvasRef.current.clientHeight
+  
+      cursorX.current = cursorXProportion * canvasRef.current.width
+      cursorY.current = cursorYProportion * canvasRef.current.height
+      updateMouseCoords()
+    }
+
+    canvasRef.current.width = canvasRef.current.clientWidth
+    canvasRef.current.height = canvasRef.current.clientHeight
+
+    // reset the transforms
+    // todo: rescale the transforms to match the new size instead
+    updateContainmentScale()
+    resetView()
+  }, [resetView, updateMouseCoords])
   useEffect(() => {
     window.addEventListener('resize', resize)
     return () => {
@@ -677,6 +687,7 @@ const Map = React.forwardRef<HTMLCanvasElement, Props>(({
       if (event) {
         cursorX.current = event.clientX - rect.x
         cursorY.current = event.clientY - rect.y
+        updateMouseCoords()
       }
       
       if (!clickPoint.current) {
@@ -734,7 +745,7 @@ const Map = React.forwardRef<HTMLCanvasElement, Props>(({
         redraw('pan')
       }
     }
-  ), [clickGraceTime, minDragTime, overpan, dragTick, redraw, updateCursor])
+  ), [clickGraceTime, minDragTime, overpan, dragTick, redraw, updateCursor, updateMouseCoords])
   useEffect(() => {
     document.addEventListener('mousemove', handleDocumentMouseMove, false)
     return () => {
@@ -893,7 +904,7 @@ const Map = React.forwardRef<HTMLCanvasElement, Props>(({
     }
   }, [handleDocumentKeyDown])
 
-  const handleDragOver = (event) => {
+  const handleDragOver = useCallback((event) => {
     if (!canvasRef.current) {
       return
     }
@@ -901,8 +912,9 @@ const Map = React.forwardRef<HTMLCanvasElement, Props>(({
     if (event) {
       cursorX.current = event.clientX - rect.x
       cursorY.current = event.clientY - rect.y
+      updateMouseCoords()
     }
-  }
+  }, [updateMouseCoords])
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) {
@@ -912,7 +924,7 @@ const Map = React.forwardRef<HTMLCanvasElement, Props>(({
     return () => {
       canvas.removeEventListener('dragover', handleDragOver, false)
     }
-  }, [])
+  }, [handleDragOver])
   
   const handleDoubleClick = useCallback(() => {
     const canvas = canvasRef.current
