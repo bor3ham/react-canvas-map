@@ -2,7 +2,7 @@ import React from 'react'
 
 import type { Coords } from './types'
 
-type Props = {
+type MarkerProps = {
   markerKey: string
   coords: Coords
 
@@ -21,6 +21,7 @@ type Props = {
   onDragCancel?(): void
 }
 
-const Marker: React.FC<Props> = () => null
+const Marker: React.FC<MarkerProps> = () => null
 
 export { Marker }
+export type { MarkerProps }

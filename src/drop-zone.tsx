@@ -1,6 +1,6 @@
 import React from 'react'
 
-type Props = {
+type DropZoneProps = {
   right?: number
   left?: number
   top?: number
@@ -17,6 +17,7 @@ type Props = {
   onDrop(): void,
 }
 
-const DropZone: React.FC<Props> = () => null
+const DropZone: React.FC<DropZoneProps> = () => null
 
 export { DropZone }
+export type { DropZoneProps }

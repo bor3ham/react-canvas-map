@@ -10,7 +10,7 @@ import type { Coords } from './types'
 const SCALE_FACTOR = 1.1
 const KEYDOWN_ESCAPE = 27
 
-type Props = {
+type MapProps = {
   image: string
   children?: React.ReactNode
 
@@ -38,7 +38,7 @@ type ScreenPositionCoords = {
   valid: boolean
 }
 
-const Map = React.forwardRef<HTMLCanvasElement, Props>(({
+const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
   image,
   children,
 
@@ -1091,3 +1091,4 @@ const Map = React.forwardRef<HTMLCanvasElement, Props>(({
 })
 
 export { Map }
+export type { MapProps }
