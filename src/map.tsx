@@ -671,7 +671,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
         draggedMarker.props.onDragCancel()
       }
       if (typeof droppedZone.props.onDrop === 'function') {
-        droppedZone.props.onDrop(draggedMarker.props)
+        droppedZone.props.onDrop(draggedMarker.props.markerKey)
       }
     } else if (typeof draggedMarker.props.onDragEnd === 'function') {
       draggedMarker.props.onDragEnd(pt)

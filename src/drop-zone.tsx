@@ -14,7 +14,7 @@ type DropZoneProps = {
   fontSize?: number,
   image?: HTMLImageElement,
 
-  onDrop(marker: object): void,
+  onDrop(markerKey: string): void,
 }
 
 const DropZone: React.FC<DropZoneProps> = () => null
