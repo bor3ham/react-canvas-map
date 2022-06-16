@@ -18,16 +18,16 @@ type MapProps = {
   onDoubleClick?(pt: Coords): void
   onCursorMove?(pt: Coords): void
 
-  minZoom: number
-  maxZoom: number
-  overpan: number
+  minZoom?: number
+  maxZoom?: number
+  overpan?: number
 
-  minDragTime: number
-  clickGraceTime: number
+  minDragTime?: number
+  clickGraceTime?: number
 
-  containInitialImage: boolean // begin with zoom/translation that contains initial image
-  containUpdatedImage: boolean // update zoom/translation to contain a change of image
-  allowContainmentZoom: boolean // allow zooming beyond min/max if image is not contained
+  containInitialImage?: boolean // begin with zoom/translation that contains initial image
+  containUpdatedImage?: boolean // update zoom/translation to contain a change of image
+  allowContainmentZoom?: boolean // allow zooming beyond min/max if image is not contained
 
   panTo?: Coords
 }
@@ -369,8 +369,8 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     const renderMarkers = (child) => {
       const {
         coords,
-
         image: markerImage,
+
         inCircle = false,
         circleColour = '#337ab7',
         size = 100,
@@ -470,11 +470,13 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
         context.textAlign = 'center'
         context.fillStyle = colour
         context.font = `${fontSize / scale}px Arial`
-        context.fillText(
-          label,
-          (bottomRight!.x + topLeft!.x) / 2,
-          (bottomRight!.y + topLeft!.y) / 2 + (fontSize / 4) / scale
-        )
+        if (label) {
+          context.fillText(
+            label,
+            (bottomRight!.x + topLeft!.x) / 2,
+            (bottomRight!.y + topLeft!.y) / 2 + (fontSize / 4) / scale
+          )
+        }
         context.globalAlpha = 1
       }
       dropZones.current.map(renderDropZones)

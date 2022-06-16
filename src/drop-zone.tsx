@@ -9,9 +9,9 @@ type DropZoneProps = {
   height: number
 
   label?: string
-  colour: string,
-  backgroundColour: string,
-  fontSize: number,
+  colour?: string,
+  backgroundColour?: string,
+  fontSize?: number,
   image?: File,
 
   onDrop(): void,

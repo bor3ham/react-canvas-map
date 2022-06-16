@@ -5,17 +5,17 @@ import type { Coords } from './types'
 type MarkerProps = {
   markerKey: string
   coords: Coords
-
   image: File
-  inCircle: boolean
-  circleColour: string
-  size: number
-  scaleWithZoom: boolean
+
+  inCircle?: boolean
+  circleColour?: string
+  size?: number
+  scaleWithZoom?: boolean
 
   onClick?(): void
   onDoubleClick?(): void
 
-  dragZoneScale: number
+  dragZoneScale?: number
   onDragTick?(coords: Coords): void
   onDragEnd?(coords: Coords): void
   onDragCancel?(): void

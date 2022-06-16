@@ -5,11 +5,11 @@ import type { Coords } from './types'
 type TooltipProps = {
   coords: Coords
   children: React.ReactNode
-  style: React.CSSProperties
-  arrowSize: number
-  tooltipStyle: React.CSSProperties
-  width: string
-  height: string
+  style?: React.CSSProperties
+  arrowSize?: number
+  tooltipStyle?: React.CSSProperties
+  width?: string
+  height?: string
 }
 
 const Tooltip: React.FC<TooltipProps> = ({
