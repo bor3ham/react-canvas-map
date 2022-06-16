@@ -5,7 +5,7 @@ import type { Coords } from './types'
 type MarkerProps = {
   markerKey: string
   coords: Coords
-  image: File
+  image: HTMLImageElement
 
   inCircle?: boolean
   circleColour?: string
