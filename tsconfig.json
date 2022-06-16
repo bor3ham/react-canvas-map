@@ -1,48 +1,15 @@
 {
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "target": "ES2019",
-    "module": "esnext",
-    "noEmitOnError": false,
-    "pretty": true,
-    "sourceMap": true,
-    "incremental": true,
-    "allowJs": false,
+    "emitDeclarationOnly": true,
+    "declaration": true,
     "jsx": "react",
-    "declaration": false,
-    "noEmit": true,
-    "downlevelIteration": true,
-    "isolatedModules": true,
-    "emitDecoratorMetadata": true,
-    "preserveConstEnums": true,
-    "strict": false,
-    "noImplicitAny": false,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "strictBindCallApply": true,
-    "strictPropertyInitialization": true,
-    "noImplicitThis": true,
-    "alwaysStrict": true,
-
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "noPropertyAccessFromIndexSignature": true,
-
-    "moduleResolution": "node",
-    "experimentalDecorators": true,
-
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-
     "lib": ["dom", "dom.iterable", "esnext"],
-
+    "esModuleInterop": true,
     "baseUrl": ".",
     "paths": {
       "react": ["demo/node_modules/react"]
     }
-  }
+  },
+  "files": ["./src/index.tsx"]
 }

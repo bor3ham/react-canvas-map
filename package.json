@@ -3,15 +3,17 @@
   "version": "0.1.4",
   "description": "An interactive canvas-based map component for React.",
   "main": "dist/react-canvas-map.js",
+  "types": "dist/react-canvas-map.d.ts",
   "repository": "git@github.com:bor3ham/react-canvas-map.git",
   "author": "Michael Boreham",
   "license": "MIT",
   "private": false,
   "scripts": {
     "publish:demo": "git branch -D gh-pages; git push origin --delete gh-pages; git checkout -b gh-pages && cd demo && npm install && cd .. && git add . && git add -f demo/dist && git add -f demo/node_modules/uptick-demo-site/dist && git commit -m \"Demo site build\" && git push origin gh-pages && git checkout master && git push origin `git subtree split --prefix demo gh-pages`:gh-pages --force",
+    "generate-types": "./node_modules/.bin/npm-dts generate --entry src/index.tsx --output dist/react-canvas-map.d.ts",
     "watch": "node scripts/watch.js",
     "build": "node scripts/build.js",
-    "prepare": "npm run build"
+    "prepare": "npm run build && npm run generate-types"
   },
   "dependencies": {},
   "peerDependencies": {
@@ -30,6 +32,7 @@
     "eslint-plugin-jsx-a11y": "^6.5.1",
     "eslint-plugin-react": "^7.29.4",
     "eslint-plugin-react-hooks": "^4.5.0",
+    "npm-dts": "^1.3.11",
     "typescript": "^4.6.4"
   }
 }
