@@ -1,0 +1,36 @@
+div.RCMAP-tooltip {
+    position: absolute;
+    width: 20rem;
+    transform: translateX(-50%);
+    user-select: text;
+    margin-top: -8px; /* arrowSize * -1 */
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+span.RCMAP-tooltip-arrow-outer {
+    display: inline-block;
+    align-self: center;
+    border-color: transparent transparent #ddd;
+    border-width: 10px; /* arrowSize + 2 */
+    border-style: solid;
+}
+
+span.RCMAP-tooltip-arrow-inner {
+    align-self: center;
+    display: inline-block;
+    margin-top: -16px; /* arrowSize * -2 */
+    border-color: transparent transparent #fff;
+    border-width: 8px; /* arrowSize */
+    border-style: solid;
+    z-index: 1;
+}
+
+div.RCMAP-tooltip-body {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    margin-top: -1px;
+}

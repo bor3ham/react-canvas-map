@@ -1,6 +1,6 @@
 {
   "name": "react-canvas-map",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "An interactive canvas-based map component for React.",
   "main": "dist/react-canvas-map.js",
   "types": "dist/react-canvas-map.d.ts",
@@ -15,7 +15,9 @@
     "build": "node scripts/build.js",
     "prepare": "npm run build && npm run generate-types"
   },
-  "dependencies": {},
+  "dependencies": {
+    "classnames": "^2.3.1"
+  },
   "peerDependencies": {
     "react": "~16.14.0"
   },

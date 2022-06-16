@@ -6,8 +6,12 @@ module.exports.config = {
   minify: true,
   format: 'esm',
   target: ['esnext'],
-  entryPoints: ['src/index.tsx'],
-  outfile: 'dist/react-canvas-map.js',
+  entryPoints: [
+    'src/index.tsx',
+    'src/index.css',
+  ],
+  entryNames: 'react-canvas-map',
+  outdir: 'dist',
   external: [
     'react',
   ],
