@@ -1,7 +1,6 @@
 import React, { useRef, useState, useMemo, useCallback, useEffect } from 'react'
 
-import { trackTransforms } from './track-transforms'
-import type { TrackedContext } from './track-transforms'
+import { extendContext } from './extend-context'
 import { Marker } from './marker'
 import { DropZone } from './drop-zone'
 import { Tooltip } from './tooltip'
@@ -60,12 +59,6 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
   panTo,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  useEffect(() => {
-    if (canvasRef.current) {
-      const context = canvasRef.current.getContext('2d')
-      trackTransforms(context)
-    }
-  }, [])
   const mapImage = useRef<HTMLImageElement>()
 
   const dragged = useRef(false)
@@ -78,7 +71,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     if (!canvasRef.current) {
       return
     }
-    const context = canvasRef.current.getContext('2d') as TrackedContext
+    const context = extendContext(canvasRef.current.getContext('2d'))
     if (!context) {
       return
     }
@@ -92,7 +85,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
 
   const animationActive = useRef(false)
   const animationCancel = useRef(false)
-  const animationStart = useRef(null)
+  const animationStart = useRef<number | null>(null)
   const animationCoords = useRef<Coords | null>(null)
   const animationLastTimestamp = useRef(+(new Date()))
 
@@ -100,14 +93,17 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
   const dropZones = useRef<React.ReactElement[]>([])
   const flatChildren = useMemo(() => {
     const allChildren: React.ReactElement[] = []
-    const getChildren = (child) => {
+    const getChildren = (child: React.ReactNode) => {
       if (Array.isArray(child)) {
-        child.map(getChildren)
-      } else if (child) {
-        if (child.props && child.props.children && child.type !== Tooltip) {
-          getChildren(child.props.children)
-        } else {
-          allChildren.push(child)
+        child.forEach(getChildren)
+      } else {
+        const asElement = child as React.ReactElement
+        if (asElement) {
+          if (asElement.props && asElement.props.children && asElement.type !== Tooltip) {
+            getChildren(asElement.props.children)
+          } else {
+            allChildren.push(asElement)
+          }
         }
       }
     }
@@ -133,7 +129,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     if (!canvasRef.current) {
       return null
     }
-    const context = canvasRef.current.getContext('2d') as TrackedContext
+    const context = extendContext(canvasRef.current.getContext('2d'))
     if (!context) {
       return null
     }
@@ -149,12 +145,19 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     bottom,
     width,
     height,
+  }: {
+    right?: number
+    left?: number
+    top?: number
+    bottom?: number
+    width: number
+    height: number
   }) => {
     if (!canvasRef.current) {
       return {valid: false} as ScreenPositionCoords
     }
     const rect = canvasRef.current.getBoundingClientRect()
-    const context = canvasRef.current.getContext('2d') as TrackedContext
+    const context = extendContext(canvasRef.current.getContext('2d'))
     if (!context) {
       return {valid: false} as ScreenPositionCoords
     }
@@ -225,12 +228,16 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     if (!canvasRef.current) {
       return null
     }
-    const context = canvasRef.current.getContext('2d') as TrackedContext
+    const context = extendContext(canvasRef.current.getContext('2d'))
     if (!context) {
       return null
     }
 
-    const close = {}
+    type DistanceLookup = {
+      [key: string]: number
+    }
+
+    const close: DistanceLookup = {}
 
     const cursorPt = getCursorCoords()
     if (cursorPt === null) {
@@ -316,7 +323,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
       return
     }
     const canvasRect = canvasRef.current.getBoundingClientRect()
-    const context = canvasRef.current.getContext('2d') as TrackedContext
+    const context = extendContext(canvasRef.current.getContext('2d'))
     if (!context) {
       return
     }
@@ -334,19 +341,19 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
   }
 
   const lastRedraw = useRef(+(new Date()))
-  const logRedraw = (reason) => {
+  const logRedraw = (reason: string) => {
     return
     const nowMs = +(new Date())
     const idleMs = nowMs - lastRedraw.current
     lastRedraw.current = nowMs
     console.log(`redrawing for ${reason} after ${idleMs}`)
   }
-  const redraw = useCallback((reason) => {
+  const redraw = useCallback((reason: string) => {
     if (!canvasRef.current) {
       return
     }
     logRedraw(reason)
-    const context = canvasRef.current.getContext('2d') as TrackedContext
+    const context = extendContext(canvasRef.current.getContext('2d'))
     if (!context) {
       return
     }
@@ -366,7 +373,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     }
 
     const scale = Math.min(context.getTransform().a, context.getTransform().d)
-    const renderMarkers = (child) => {
+    const renderMarkers = (child: React.ReactElement) => {
       const {
         coords,
         image: markerImage,
@@ -427,7 +434,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     )).map(renderMarkers)
     if (draggingMarker && dragged.current) {
       const hoverDropZone = getDropZoneTouchingCursor()
-      const renderDropZones = (child) => {
+      const renderDropZones = (child: React.ReactElement) => {
         const {
           right,
           left,
@@ -645,7 +652,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
       onClick(pt)
     }
   }, [onClick])
-  const dragTick = useCallback((markerKey) => {
+  const dragTick = useCallback((markerKey: string) => {
     const pt = getCursorCoords()
     if (pt === null) {
       return
@@ -655,7 +662,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
       draggingMarker.props.onDragTick(pt)
     }
   }, [])
-  const dragEnd = useCallback((markerKey) => {
+  const dragEnd = useCallback((markerKey: string) => {
     const pt = getCursorCoords()
     if (pt === null) {
       return
@@ -678,82 +685,80 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     }
   }, [getDropZoneTouchingCursor])
 
-  const handleDocumentMouseMove = useMemo(() => (
-    (event) => {
-      if (!canvasRef.current) {
-        return
-      }
-      const context = canvasRef.current.getContext('2d')
-      if (!context) {
-        return
-      }
-      
-      const lastPt = getCursorCoords()
-      const rect = canvasRef.current.getBoundingClientRect()
-      if (event) {
-        cursor.current = {
-          x: event.clientX - rect.x,
-          y: event.clientY - rect.y,
-        }
-        updateMouseCoords()
-      }
-      
-      if (!clickPoint.current) {
-        updateCursor()
-        return
-      }
-  
-      if (+(new Date()) > clickTime.current + clickGraceTime) {
-        dragged.current = true
-      }
-  
-      if (draggingMarkerKey.current) {
-        if (typeof clickTime.current === 'number' && +(new Date()) > clickTime.current + minDragTime) {
-          dragTick(draggingMarkerKey.current)
-        }
-      } else {
-        const pt = getCursorCoords()
-        if (pt === null || lastPt === null || !mapImage.current) {
-          return
-        }
-        const transform = context.getTransform()
-        let translateX = pt.x - lastPt.x
-        let translateY = pt.y - lastPt.y
-        if (translateX > 0) {
-          const xLimit = rect.width - overpan
-          if (transform.e > xLimit) {
-            translateX = 0
-          } else if (transform.e + translateX > xLimit) {
-            translateX = xLimit - transform.e
-          }
-        } else if (translateX < 0) {
-          const xLimit = -(mapImage.current.width * transform.a) + overpan
-          if (transform.e < xLimit) {
-            translateX = 0
-          } else if (transform.e + translateX < xLimit) {
-            translateX = xLimit - transform.e
-          }
-        }
-        if (translateY > 0) {
-          const yLimit = rect.height - overpan
-          if (transform.f > yLimit) {
-            translateY = 0
-          } else if (transform.f + translateY > yLimit) {
-            translateY = yLimit - transform.f
-          }
-        } else if (translateY < 0) {
-          const yLimit = -(mapImage.current.height * transform.d) + overpan
-          if (transform.f < yLimit) {
-            translateY = 0
-          } else if (transform.f + translateY < yLimit) {
-            translateY = yLimit - transform.f
-          }
-        }
-        context.translate(translateX, translateY)
-        redraw('pan')
-      }
+  const handleDocumentMouseMove = useCallback((event: MouseEvent) => {
+    if (!canvasRef.current) {
+      return
     }
-  ), [clickGraceTime, minDragTime, overpan, dragTick, redraw, updateCursor, updateMouseCoords])
+    const context = canvasRef.current.getContext('2d')
+    if (!context) {
+      return
+    }
+    
+    const lastPt = getCursorCoords()
+    const rect = canvasRef.current.getBoundingClientRect()
+    if (event) {
+      cursor.current = {
+        x: event.clientX - rect.x,
+        y: event.clientY - rect.y,
+      }
+      updateMouseCoords()
+    }
+    
+    if (!clickPoint.current) {
+      updateCursor()
+      return
+    }
+
+    if (+(new Date()) > clickTime.current + clickGraceTime) {
+      dragged.current = true
+    }
+
+    if (draggingMarkerKey.current) {
+      if (typeof clickTime.current === 'number' && +(new Date()) > clickTime.current + minDragTime) {
+        dragTick(draggingMarkerKey.current)
+      }
+    } else {
+      const pt = getCursorCoords()
+      if (pt === null || lastPt === null || !mapImage.current) {
+        return
+      }
+      const transform = context.getTransform()
+      let translateX = pt.x - lastPt.x
+      let translateY = pt.y - lastPt.y
+      if (translateX > 0) {
+        const xLimit = rect.width - overpan
+        if (transform.e > xLimit) {
+          translateX = 0
+        } else if (transform.e + translateX > xLimit) {
+          translateX = xLimit - transform.e
+        }
+      } else if (translateX < 0) {
+        const xLimit = -(mapImage.current.width * transform.a) + overpan
+        if (transform.e < xLimit) {
+          translateX = 0
+        } else if (transform.e + translateX < xLimit) {
+          translateX = xLimit - transform.e
+        }
+      }
+      if (translateY > 0) {
+        const yLimit = rect.height - overpan
+        if (transform.f > yLimit) {
+          translateY = 0
+        } else if (transform.f + translateY > yLimit) {
+          translateY = yLimit - transform.f
+        }
+      } else if (translateY < 0) {
+        const yLimit = -(mapImage.current.height * transform.d) + overpan
+        if (transform.f < yLimit) {
+          translateY = 0
+        } else if (transform.f + translateY < yLimit) {
+          translateY = yLimit - transform.f
+        }
+      }
+      context.translate(translateX, translateY)
+      redraw('pan')
+    }
+  }, [clickGraceTime, minDragTime, overpan, dragTick, redraw, updateCursor, updateMouseCoords])
   useEffect(() => {
     document.addEventListener('mousemove', handleDocumentMouseMove, false)
     return () => {
@@ -828,7 +833,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
   }, [handleCanvasMouseUp])
 
   const zoom = useMemo(() => (
-    (clicks) => {
+    (clicks: number) => {
       if (!canvasRef.current) {
         return
       }
@@ -861,24 +866,27 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
       redraw('zoom')
     }
   ), [maxImageZoom, minImageZoom, redraw])
-  const handleScroll = useMemo(() => (
-    (event) => {
-      animationCancel.current = true
-  
-      let delta = event.wheelDelta
-      if (delta) {
-        delta /= 40
-      } else if (event.detail) {
-        delta = -event.detail
-      } else {
-        delta = 0
-      }
-      if (delta) {
-        zoom(delta)
-      }
-      return event.preventDefault() && false
+  const handleScroll = useCallback((event: Event) => {
+    animationCancel.current = true
+
+    // @ts-ignore
+    let delta = event.deltaY
+    if (delta) {
+      delta /= 40
+    // @ts-ignore
+    } else if (event.detail) {
+      // @ts-ignore
+      delta = -event.detail
+    } else {
+      delta = 0
     }
-  ), [zoom])
+    if (delta) {
+      zoom(delta)
+    }
+    event.preventDefault()
+    event.stopPropagation()
+    return false
+  }, [zoom])
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) {
@@ -892,7 +900,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     }
   }, [handleScroll])
 
-  const handleDocumentKeyDown = useCallback((event) => {
+  const handleDocumentKeyDown = useCallback((event: KeyboardEvent) => {
     if (event.which === KEYDOWN_ESCAPE) {
       if (typeof draggingMarkerKey.current === 'string') {
         const draggingMarker = getMarkerChild(draggingMarkerKey.current)
@@ -912,7 +920,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     }
   }, [handleDocumentKeyDown])
 
-  const handleDragOver = useCallback((event) => {
+  const handleDragOver = useCallback((event: MouseEvent) => {
     if (!canvasRef.current) {
       return
     }
@@ -941,7 +949,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     if (!canvas) {
       return
     }
-    const context = canvas.getContext('2d') as TrackedContext
+    const context = extendContext(canvasRef.current.getContext('2d'))
     if (!context) {
       return
     }
@@ -993,7 +1001,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     resize()
   }, [resize])
 
-  const animate = useCallback((timestamp) => {
+  const animate = useCallback((timestamp: number) => {
     if (animationCancel.current) {
       animationStart.current = null
       animationCancel.current = false
@@ -1051,7 +1059,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
       window.requestAnimationFrame(animate)
     }
   }, [redraw])
-  const animatePanTo = useCallback((coords) => {
+  const animatePanTo = useCallback((coords: Coords) => {
     animationCancel.current = false
     animationStart.current = null
     animationCoords.current = coords

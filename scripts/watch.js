@@ -1,11 +1,14 @@
 const esbuild = require('esbuild')
 
-const config = require('./build.js').config
+const { config } = require('./esbuild-config.js')
 
-esbuild.build({
-  ...config,
-  minify: false,
-  watch: true,
-}).then(result => {
-  console.log('watching ...')
-})
+const watch = async () => {
+  const ctx = await esbuild.context({
+    ...config,
+    minify: false,
+  })
+  await ctx.watch()
+  console.log('watching...')
+}
+
+watch()

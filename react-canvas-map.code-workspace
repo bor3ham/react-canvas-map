@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"path": ".",
+			"name": "package"
+		},
+		{
+			"path": "demo",
+			"name": "demo"
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"demo": true,
+			"node_modules": true,
+			"dist": true,
+			"_site": true,
+			".jekyll-cache": true
+		}
+	}
+}

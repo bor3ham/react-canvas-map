@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
-import ReactDOM from 'react-dom'
+import React, { useState, useEffect, useRef } from 'react'
+import * as ReactDOM from 'react-dom/client'
 import { Map, Marker } from 'react-canvas-map'
 import type { Coords } from 'react-canvas-map'
-import { Checkbox, Button } from 'mireco/inputs'
+import { Checkbox, Button } from 'mireco'
 
 const markerImage = new Image()
-markerImage.src = `./static/marker-blue.svg`
+markerImage.src = `/static/marker-blue.svg`
 
 const MAP_INTERVAL_SECONDS = 5
 const MARKERS_INTERVAL_MS = 100
@@ -88,10 +88,6 @@ const StressTest = () => {
     }
   }, [])
 
-  const handleCursorMove = useCallback((coords) => {
-    console.log('cursor moved to', coords)
-  }, [])
-
   return (
     <>
       <Button block onClick={() => {
@@ -100,29 +96,32 @@ const StressTest = () => {
         New Image
       </Button>
       <Checkbox
-        label={`New map image every ${MAP_INTERVAL_SECONDS} seconds`}
         value={rotateMap}
         onChange={(newValue) => {
           setRotateMap(newValue)
         }}
         block
-      />
+      >
+        New map image every {MAP_INTERVAL_SECONDS} seconds
+      </Checkbox>
       <Checkbox
-        label={`Adjust marker locations image every ${MARKERS_INTERVAL_MS} ms`}
         value={rotateMarkers}
         onChange={(newValue) => {
           setRotateMarkers(newValue)
         }}
         block
-      />
+      >
+        Adjust marker locations every {MARKERS_INTERVAL_MS} ms
+      </Checkbox>
       <Checkbox
-        label={`Pan to random location every ${PAN_INTERVAL_SECONDS} seconds`}
         value={randomPan}
         onChange={(newValue) => {
           setRandomPan(newValue)
         }}
         block
-      />
+      >
+        Pan to random location every {PAN_INTERVAL_SECONDS} seconds
+      </Checkbox>
 
       <div style={{height: '50vh', border: '1px solid #ddd', marginTop: '1rem'}}>
         {!!mapImage && (
@@ -132,7 +131,6 @@ const StressTest = () => {
               setMarkers(prevMarkers => ([...prevMarkers, coords]))
             }}
             panTo={panTo}
-            onCursorMove={handleCursorMove}
           >
             {markers.map((marker, markerIndex) => {
               const markerKey = `marker-${markerIndex}`
@@ -158,7 +156,8 @@ const StressTest = () => {
   )
 }
 
-const mount = document.querySelector('div.stress-test-mount')
-if (mount) {
-  ReactDOM.render(<StressTest />, mount)
+const container = document.querySelector('div.stress-test-mount')
+if (container) {
+  const root = ReactDOM.createRoot(container)
+  root.render(<StressTest />)
 }

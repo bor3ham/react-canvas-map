@@ -1,13 +1,18 @@
 import React, { useState } from 'react'
-import ReactDOM from 'react-dom'
+import * as ReactDOM from 'react-dom/client'
 import { Map, Marker } from 'react-canvas-map'
 
-const markerOneImage = new Image()
-markerOneImage.src = './static/marker-blue.svg'
-const markerTwoImage = new Image()
-markerTwoImage.src = './static/marker-red.svg'
-
 const BasicExample = () => {
+  const [markerOneImage] = useState(() => {
+    const image = new Image()
+    image.src = './static/marker-blue.svg'
+    return image
+  })
+  const [markerTwoImage] = useState(() => {
+    const image = new Image()
+    image.src = './static/marker-red.svg'
+    return image
+  })
   const [markerOneCoords, setMarkerOneCoords] = useState({x: 100, y: 200})
   const [markerTwoCoords, setMarkerTwoCoords] = useState({x: 150, y: 20})
   return (
@@ -40,7 +45,8 @@ const BasicExample = () => {
   )
 }
 
-const mount = document.querySelector('div.demo-mount-basic')
-if (mount) {
-  ReactDOM.render(<BasicExample />, mount)
+const container = document.querySelector('div.demo-mount-basic')
+if (container) {
+  const root = ReactDOM.createRoot(container)
+  root.render(<BasicExample />)
 }

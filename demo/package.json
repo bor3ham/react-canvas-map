@@ -8,20 +8,33 @@
   "license": "MIT",
   "private": false,
   "scripts": {
+    "lint": "./node_modules/.bin/eslint src",
     "host": "jekyll serve",
     "watch": "node scripts/watch.js",
     "build": "node scripts/build.js",
     "start": "node_modules/.bin/concurrently \"npm run watch\" \"npm run host\""
   },
   "dependencies": {
-    "mireco": "^0.2.2",
-    "react": "~16.14.0",
-    "react-dom": "~16.14.0",
+    "mireco": "^1.0.10",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "uptick-demo-site": "^1.2.3"
   },
   "devDependencies": {
+    "@types/react": "^18.2.14",
+    "@types/react-dom": "^18.2.4",
     "concurrently": "^5.2.0",
+    "esbuild": "^0.17.19",
     "esbuild-stylus-loader": "^0.4.2",
-    "stylus": "^0.57.0"
+    "eslint": "^8.42.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-airbnb-typescript": "^17.0.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-eslint-comments": "^3.2.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-jsx-a11y": "^6.7.1",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "typescript": "^5.1.3"
   }
 }

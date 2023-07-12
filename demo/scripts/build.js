@@ -1,24 +1,9 @@
-const { build } = require('esbuild')
-const { stylusLoader } = require('esbuild-stylus-loader')
+const esbuild = require('esbuild')
 
-module.exports.config = {
-  plugins: [
-    stylusLoader({
-      stylusOptions: {
-        includeCss: true,
-      },
-    }),
-  ],
-  entryPoints: [
-    'demo.ts',
-    'demo.styl',
-  ],
-  bundle: true,
-  minify: true,
-  sourcemap: true,
-  format: 'iife',
-  target: ['chrome58', 'firefox57', 'safari11', 'edge18'],
-  outdir: 'dist',
+const { config } = require('./esbuild-config.js')
+
+const build = async () => {
+  await esbuild.build(config)
 }
 
-build(module.exports.config).catch(() => process.exit(1))
+build()

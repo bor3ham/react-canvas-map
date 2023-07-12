@@ -1,4 +1,5 @@
 module.exports = {
+  root: true,
   extends: ['airbnb', 'airbnb-typescript', 'airbnb/hooks', 'prettier', 'plugin:eslint-comments/recommended'],
   plugins: ['import', 'react'],
   parserOptions: {
