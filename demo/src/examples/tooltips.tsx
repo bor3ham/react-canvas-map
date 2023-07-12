@@ -47,7 +47,7 @@ const TooltipsExample = () => {
                 />
                 {active && (
                   <Tooltip coords={marker.coords}>
-                    <p>A link looks <a href="/">like this</a>.</p>
+                    <p>A link looks <a href="google.com">like this</a>.</p>
                     <p>I am marker {JSON.stringify(marker)}</p>
                   </Tooltip>
                 )}

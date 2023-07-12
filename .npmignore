@@ -1,2 +1,4 @@
-scripts/
-demo/
+.eslintrc.js
+demo
+scripts
+tsconfig.json

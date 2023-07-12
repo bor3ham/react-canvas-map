@@ -5,7 +5,7 @@ import type { Coords } from 'react-canvas-map'
 import { Checkbox, Button } from 'mireco'
 
 const markerImage = new Image()
-markerImage.src = `/static/marker-blue.svg`
+markerImage.src = `./static/marker-blue.svg`
 
 const MAP_INTERVAL_SECONDS = 5
 const MARKERS_INTERVAL_MS = 100
@@ -73,7 +73,7 @@ const StressTest = () => {
   }, [])
 
   const [randomPan, setRandomPan] = useState(true)
-  const [panTo, setPanTo] = useState(null)
+  const [panTo, setPanTo] = useState<Coords | undefined>(undefined)
   const randomPanRef = useRef(randomPan)
   randomPanRef.current = randomPan
   useEffect(() => {

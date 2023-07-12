@@ -40,6 +40,7 @@ Install `jekyll` using `ruby`:
 
 ```shell
 gem install jekyll
+gem install jekyll-seo-tag
 ```
 
 ## Running
@@ -65,4 +66,4 @@ refresh.
 
 ## Linting
 
-todo
+In both the package root or demo directory: `npm run lint`.
