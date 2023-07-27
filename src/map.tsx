@@ -990,7 +990,8 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     mapImage.current = new Image()
     mapImage.current.src = image
     mapImage.current.onload = handleImageLoad
-  }, [image, handleImageLoad])
+    redraw('new image')
+  }, [image, handleImageLoad, redraw])
   useEffect(() => {
     if (mapImage.current) {
       mapImage.current.onload = handleImageLoad
