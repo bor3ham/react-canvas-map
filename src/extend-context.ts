@@ -7,19 +7,16 @@ export type { ExtendedContext }
 
 export function extendContext(ctx: CanvasRenderingContext2D | null): ExtendedContext | null {
   if (!ctx) return ctx
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
   const extended = ctx as ExtendedContext
   extended.transformedPoint = (x: number, y: number) => {
-    const pt = svg.createSVGPoint()
-    pt.x = x
-    pt.y = y
-    return pt.matrixTransform(extended.getTransform().inverse())
+    const pt = new DOMPoint(x, y)
+    const transform = extended.getTransform()
+    return pt.matrixTransform(transform.inverse())
   }
   extended.untransformedPoint = (x: number, y: number) => {
-    const pt = svg.createSVGPoint()
-    pt.x = x
-    pt.y = y
-    return pt.matrixTransform(extended.getTransform())
+    const pt = new DOMPoint(x, y)
+    const transform = extended.getTransform()
+    return pt.matrixTransform(transform)
   }
   return extended
 }
