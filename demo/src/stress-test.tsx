@@ -30,7 +30,7 @@ function randomPoint() {
 }
 
 const StressTest = () => {
-  const [mapImage, setMapImage] = useState(randomMap())
+  const [mapImage, setMapImage] = useState<string | null>(randomMap())
   const randomiseImage = () => {
     setMapImage(randomMap())
   }
@@ -94,6 +94,11 @@ const StressTest = () => {
         randomiseImage()
       }}>
         New Image
+      </Button>
+      <Button block onClick={() => {
+        setMapImage(null)
+      }}>
+        Null Image
       </Button>
       <Checkbox
         value={rotateMap}
