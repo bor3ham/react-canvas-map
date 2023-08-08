@@ -1,6 +1,6 @@
 {
   "name": "react-canvas-map",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "An interactive canvas-based map component for React.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

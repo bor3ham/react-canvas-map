@@ -60,6 +60,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mapImage = useRef<HTMLImageElement>()
+  const mapImageValid = useRef<boolean>(false)
 
   const dragged = useRef(false)
   const draggingMarkerKey = useRef<string | null>(null)
@@ -368,7 +369,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
     context.restore()
 
-    if (mapImage.current) {
+    if (mapImage.current && mapImageValid.current) {
       context.drawImage(mapImage.current, 0, 0, mapImage.current.width, mapImage.current.height)
     }
 
@@ -550,6 +551,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
   const [imageInitialised, setImageInitialised] = useState(false)
   const handleImageLoad = useMemo(() => (
     () => {
+      mapImageValid.current = true
       if (!canvasRef.current || !mapImage.current) {
         return
       }
@@ -987,6 +989,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
   }, [handleDoubleClick])
 
   useEffect(() => {
+    mapImageValid.current = false
     mapImage.current = new Image()
     mapImage.current.src = image
     mapImage.current.onload = handleImageLoad
