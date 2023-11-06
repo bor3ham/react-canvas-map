@@ -58,6 +58,8 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
 
   panTo,
 }, ref) => {
+  const containerRef = useRef<HTMLDivElement>(null)
+
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mapImage = useRef<HTMLImageElement>()
   const mapImageValid = useRef<boolean>(false)
@@ -498,21 +500,6 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
   useEffect(() => {
     redraw('new children')
   }, [flatChildren, redraw])
-
-  const resetView = useCallback(() => {
-    if (!canvasRef.current) {
-      return
-    }
-    const context = canvasRef.current.getContext('2d')
-    if (!context) {
-      return
-    }
-
-    const transform = context.getTransform()
-    const maxScale = Math.max(transform.a, transform.d)
-    context.setTransform(maxScale, 0, 0, maxScale, transform.e, transform.f)
-    redraw('view reset')
-  }, [redraw])
   
   // scale at which the provided image totally covers the canvas
   const [containmentScale, setContainmentScale] = useState(1)
@@ -530,7 +517,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     return minZoom
   }, [allowContainmentZoom, minZoom, containmentScale])
   
-  const updateContainmentScale = () => {
+  const updateContainmentScale = useCallback(() => {
     if (!canvasRef.current || !mapImage.current) {
       return
     }
@@ -547,7 +534,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
       }
       setContainmentScale(updatedScale)
     }
-  }
+  }, [])
   const [imageInitialised, setImageInitialised] = useState(false)
   const handleImageLoad = useMemo(() => (
     () => {
@@ -602,7 +589,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
         }
       }
     }
-  ), [imageInitialised, containInitialImage, containUpdatedImage, redraw, containmentScale])
+  ), [])
 
   const resize = useCallback(() => {
     if (!canvasRef.current) {
@@ -621,14 +608,22 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
       updateMouseCoords()
     }
 
-    canvasRef.current.width = canvasRef.current.clientWidth
-    canvasRef.current.height = canvasRef.current.clientHeight
+    const context = canvasRef.current.getContext('2d')
+    let transBefore: DOMMatrix | undefined = undefined
+    if (context) {
+      transBefore = context.getTransform()
+    }
+    if (containerRef.current) {
+      canvasRef.current.width = containerRef.current.clientWidth
+      canvasRef.current.height = containerRef.current.clientHeight
+    }
+    if (context && transBefore) {
+      context.setTransform(transBefore)
+    }
 
-    // reset the transforms
-    // todo: rescale the transforms to match the new size instead
     updateContainmentScale()
-    resetView()
-  }, [resetView, updateMouseCoords])
+    redraw('resize')
+  }, [updateMouseCoords])
   useEffect(() => {
     window.addEventListener('resize', resize)
     return () => {
@@ -1079,7 +1074,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
   }, [panTo, animatePanTo])
 
   return (
-    <div style={{
+    <div ref={containerRef} style={{
       position: 'relative',
       width: '100%',
       height: '100%',
