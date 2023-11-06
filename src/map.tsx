@@ -1091,7 +1091,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
           // eslint-disable-next-line no-param-reassign
           (ref as React.MutableRefObject<HTMLCanvasElement>).current = node
         }
-      }} style={{width: '100%', height: '100%'}} />
+      }} style={{position: 'absolute', width: '100%', height: '100%'}} />
       <div ref={tooltipsRef}>
         {tooltipChildren}
       </div>
