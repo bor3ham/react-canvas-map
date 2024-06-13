@@ -251,13 +251,13 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
       const {
         markerKey,
         coords,
-  
+
         size = 100,
         scaleWithZoom = true,
 
         onClick: onMarkerClick,
         onDoubleClick: onMarkerDoubleClick,
-  
+
         dragZoneScale = 1,
         onDragTick,
         onDragEnd,
@@ -360,7 +360,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     if (!context) {
       return
     }
-    
+
     // Clear the entire canvas
     const p1 = context.transformedPoint(0, 0)
     const p2 = context.transformedPoint(canvasRef.current.width, canvasRef.current.height)
@@ -445,7 +445,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
           bottom,
           width,
           height,
-          
+
           label,
           colour = '#fff',
           backgroundColour = '#0f0',
@@ -500,10 +500,10 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
   useEffect(() => {
     redraw('new children')
   }, [flatChildren, redraw])
-  
+
   // scale at which the provided image totally covers the canvas
   const [containmentScale, setContainmentScale] = useState(1)
-  
+
   const maxImageZoom = useMemo(() => {
     if (allowContainmentZoom) {
       return Math.max(maxZoom, containmentScale)
@@ -516,7 +516,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     }
     return minZoom
   }, [allowContainmentZoom, minZoom, containmentScale])
-  
+
   const updateContainmentScale = useCallback(() => {
     if (!canvasRef.current || !mapImage.current) {
       return
@@ -567,13 +567,13 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
               (-transform.e + (canvasRef.current.width / 2) - (heightScaledWidth / 2)) / transform.a,
               -transform.f / transform.d
             )
-          }
+            }
         }
         else {
           newContainmentScale = canvasRef.current.width / imgWidth
           if (containing) {
             let transform = context.getTransform()
-            const scaleAdjust =  containmentScale / transform.a
+            const scaleAdjust =  newContainmentScale / transform.a
             context.scale(scaleAdjust, scaleAdjust)
             transform = context.getTransform()
             context.translate(
@@ -595,12 +595,12 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     if (!canvasRef.current) {
       return
     }
-  
+
     if (cursor.current !== null)
     {
       const cursorXProportion = cursor.current.x / canvasRef.current.clientWidth
       const cursorYProportion = cursor.current.y / canvasRef.current.clientHeight
-  
+
       cursor.current = {
         x: cursorXProportion * canvasRef.current.width,
         y: cursorYProportion * canvasRef.current.height,
@@ -690,7 +690,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     if (!context) {
       return
     }
-    
+
     const lastPt = getCursorCoords()
     const rect = canvasRef.current.getBoundingClientRect()
     if (event) {
@@ -700,7 +700,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
       }
       updateMouseCoords()
     }
-    
+
     if (!clickPoint.current) {
       updateCursor()
       return
@@ -788,10 +788,10 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
       document.removeEventListener('mouseup', handleDocumentMouseUp, false)
     }
   }, [handleDocumentMouseUp])
-  
+
   const handleCanvasMouseDown = useCallback(() => {
     animationCancel.current = true
-    
+
     // @ts-ignore: Old vendor prefixes
     document.body.style.mozUserSelect = 'none'
     document.body.style.webkitUserSelect = 'none'
@@ -812,7 +812,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
       canvas.removeEventListener('mousedown', handleCanvasMouseDown, false)
     }
   }, [handleCanvasMouseDown])
-  
+
   const handleCanvasMouseUp = useCallback(() => {
     if (!dragged.current) {
       handleClick()
@@ -838,7 +838,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
       if (!context) {
         return
       }
-  
+
       const pt = getCursorCoords()
       if (pt === null) {
         return
@@ -940,7 +940,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
       canvas.removeEventListener('dragover', handleDragOver, false)
     }
   }, [handleDragOver])
-  
+
   const handleDoubleClick = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) {
@@ -950,7 +950,7 @@ const Map = React.forwardRef<HTMLCanvasElement, MapProps>(({
     if (!context) {
       return
     }
-    
+
     let clickedMarker: React.ReactElement | undefined
     if (draggingMarkerKey.current) {
       clickedMarker = getMarkerChild(draggingMarkerKey.current)
